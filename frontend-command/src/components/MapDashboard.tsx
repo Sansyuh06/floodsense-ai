@@ -6,10 +6,11 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { io } from 'socket.io-client';
 import {
     AlertTriangle, Activity, Layers, Radio, Shield, LogOut, Loader2, RefreshCw,
-    Droplets, Heart, Building, BarChart3, Play, Pause, RotateCcw
+    Droplets, Heart, Building, BarChart3, Play, Pause, RotateCcw, FileText, CheckCircle, Clock, Eye
 } from 'lucide-react';
 import { fetchRiskPrediction, fetchBulkRisk, type BulkRiskResult } from '@/lib/api';
 import { STATES_DATA, getAllDams, getDangerDams, getVulnerableDistricts, type DamData } from '@/data/statesData';
+import { getReports, updateReportStatus, getReportStats, type CitizenReport } from '@/lib/reportsStore';
 
 const MONITORING_POINTS = STATES_DATA.flatMap(state =>
     state.districts.map(d => ({
@@ -35,7 +36,9 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
     const [zoneCount, setZoneCount] = useState(0);
     const [loadingBulk, setLoadingBulk] = useState(false);
     const [riskData, setRiskData] = useState<BulkRiskResult[]>([]);
-    const [activeTab, setActiveTab] = useState<'telemetry' | 'dams' | 'vulnerability' | 'simulation'>('telemetry');
+    const [activeTab, setActiveTab] = useState<'telemetry' | 'dams' | 'vulnerability' | 'simulation' | 'reports'>('telemetry');
+    const [citizenReports, setCitizenReports] = useState<CitizenReport[]>([]);
+    const [reportStats, setReportStats] = useState(getReportStats());
     // Flood simulation state
     const [simRunning, setSimRunning] = useState(false);
     const [simHour, setSimHour] = useState(0);
@@ -266,10 +269,11 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                             <h2 className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Shield className="w-3 h-3" /> System Status</h2>
                             <span className="flex items-center gap-1 text-green-600 text-[10px] font-bold"><span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" /></span>ACTIVE</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-1.5 text-[11px]">
-                            <div className="bg-white border border-gray-100 rounded p-1.5 text-center"><div className="text-gray-400 text-[9px]">Monitoring</div><div className="font-bold text-[#1a237e]">{sensorCount || '...'}</div></div>
+                        <div className="grid grid-cols-4 gap-1.5 text-[11px]">
+                            <div className="bg-white border border-gray-100 rounded p-1.5 text-center"><div className="text-gray-400 text-[9px]">Monitor</div><div className="font-bold text-[#1a237e]">{sensorCount || '...'}</div></div>
                             <div className="bg-white border border-gray-100 rounded p-1.5 text-center"><div className="text-gray-400 text-[9px]">High Risk</div><div className="font-bold text-red-600">{zoneCount || '0'}</div></div>
                             <div className="bg-white border border-gray-100 rounded p-1.5 text-center"><div className="text-gray-400 text-[9px]">Dams ⚠️</div><div className="font-bold text-purple-600">{dangerDams.length}</div></div>
+                            <div className="bg-white border border-gray-100 rounded p-1.5 text-center"><div className="text-gray-400 text-[9px]">Reports</div><div className="font-bold text-orange-600">{reportStats.total}</div></div>
                         </div>
                         <button onClick={loadBulkRisk} disabled={loadingBulk}
                             className="mt-2 w-full text-[10px] font-bold py-1.5 rounded bg-[#1a237e] text-white hover:bg-[#283593] flex items-center justify-center gap-1 disabled:opacity-50">
@@ -305,11 +309,12 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                 {/* Tabs */}
                 <div className="flex border-b border-gray-200 px-3">
                     {([
-                        { id: 'telemetry', icon: <Radio className="w-3 h-3" />, label: 'Telemetry' },
-                        { id: 'dams', icon: <Droplets className="w-3 h-3" />, label: 'Dams' },
-                        { id: 'vulnerability', icon: <Heart className="w-3 h-3" />, label: 'Vuln.' },
-                        { id: 'simulation', icon: <BarChart3 className="w-3 h-3" />, label: 'Sim' },
-                    ] as const).map(tab => (
+                        { id: 'telemetry' as const, icon: <Radio className="w-3 h-3" />, label: 'Telem' },
+                        { id: 'dams' as const, icon: <Droplets className="w-3 h-3" />, label: 'Dams' },
+                        { id: 'vulnerability' as const, icon: <Heart className="w-3 h-3" />, label: 'Vuln' },
+                        { id: 'simulation' as const, icon: <BarChart3 className="w-3 h-3" />, label: 'Sim' },
+                        { id: 'reports' as const, icon: <FileText className="w-3 h-3" />, label: 'Rpts' },
+                    ]).map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                             className={`flex-1 text-[10px] font-bold py-2 flex items-center justify-center gap-1 border-b-2 ${activeTab === tab.id ? 'border-[#1a237e] text-[#1a237e]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
                             {tab.icon} {tab.label}
@@ -436,6 +441,49 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                                     ))}
                                 </div>
                             </div>
+                        </div>
+                    )}
+                    {activeTab === 'reports' && (
+                        <div className="space-y-2">
+                            {/* Stats */}
+                            <div className="grid grid-cols-3 gap-1 text-[9px] text-center">
+                                <div className="bg-red-50 border border-red-100 rounded p-1.5"><span className="text-red-600 font-bold block">{reportStats.severe + reportStats.high}</span>Severe/High</div>
+                                <div className="bg-yellow-50 border border-yellow-100 rounded p-1.5"><span className="text-yellow-600 font-bold block">{reportStats.pending}</span>Pending</div>
+                                <div className="bg-green-50 border border-green-100 rounded p-1.5"><span className="text-green-600 font-bold block">{reportStats.resolved}</span>Resolved</div>
+                            </div>
+                            <button onClick={() => { setCitizenReports(getReports()); setReportStats(getReportStats()); }} className="w-full text-[10px] font-bold py-1.5 rounded bg-[#1a237e] text-white flex items-center justify-center gap-1"><RefreshCw className="w-3 h-3" /> Refresh Reports</button>
+                            {/* Report List */}
+                            {(citizenReports.length > 0 ? citizenReports : getReports()).map((r, i) => (
+                                <div key={i} className="bg-gray-50 border border-gray-100 rounded p-2 space-y-1.5">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-mono text-gray-500">{r.id}</span>
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${r.severity === 'SEVERE' ? 'bg-red-600 text-white border-red-600' :
+                                                r.severity === 'HIGH' ? 'bg-red-100 text-red-700 border-red-200' :
+                                                    r.severity === 'MODERATE' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                                        'bg-green-100 text-green-700 border-green-200'
+                                            }`}>{r.severity}</span>
+                                    </div>
+                                    <p className="text-[11px] text-gray-700">{r.description.slice(0, 100)}{r.description.length > 100 ? '...' : ''}</p>
+                                    <div className="flex items-center justify-between text-[9px]">
+                                        <span className="text-gray-400">📍 {r.district}, {r.state}</span>
+                                        <span className="text-gray-400">👍 {r.upvotes}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[9px]">
+                                        <span className="text-gray-400">{r.submittedBy} · {new Date(r.submittedAt).toLocaleTimeString()}</span>
+                                        <span className={`font-bold ${r.status === 'submitted' ? 'text-red-500' :
+                                                r.status === 'acknowledged' ? 'text-yellow-600' :
+                                                    r.status === 'investigating' ? 'text-blue-600' : 'text-green-600'
+                                            }`}>{r.status.toUpperCase()}</span>
+                                    </div>
+                                    {r.status !== 'resolved' && (
+                                        <div className="flex gap-1 mt-1">
+                                            {r.status === 'submitted' && <button onClick={() => { updateReportStatus(r.id, 'acknowledged'); setCitizenReports(getReports()); setReportStats(getReportStats()); }} className="flex-1 text-[9px] py-1 rounded bg-yellow-100 text-yellow-700 font-bold border border-yellow-200"><CheckCircle className="w-2.5 h-2.5 inline mr-0.5" />ACK</button>}
+                                            {(r.status === 'submitted' || r.status === 'acknowledged') && <button onClick={() => { updateReportStatus(r.id, 'investigating'); setCitizenReports(getReports()); setReportStats(getReportStats()); }} className="flex-1 text-[9px] py-1 rounded bg-blue-100 text-blue-700 font-bold border border-blue-200"><Eye className="w-2.5 h-2.5 inline mr-0.5" />Investigate</button>}
+                                            <button onClick={() => { updateReportStatus(r.id, 'resolved'); setCitizenReports(getReports()); setReportStats(getReportStats()); }} className="flex-1 text-[9px] py-1 rounded bg-green-100 text-green-700 font-bold border border-green-200"><CheckCircle className="w-2.5 h-2.5 inline mr-0.5" />Resolve</button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
