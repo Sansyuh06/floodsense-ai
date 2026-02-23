@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import {
-    Droplets, Phone, User, MapPin, Building, ChevronRight,
+    Phone, User, MapPin, Building, ChevronRight,
     Shield, Locate, BadgeCheck, Users, Siren
 } from "lucide-react";
 
@@ -46,7 +46,7 @@ export default function AuthPage({ onLogin }: AuthFormProps) {
     const [loading, setLoading] = useState(false);
 
     const handleRequestGPS = () => {
-        if (navigator.geolocation) {
+        if(navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 () => setGpsGranted(true),
                 () => alert("GPS permission denied. Please enable location services."),
@@ -57,13 +57,13 @@ export default function AuthPage({ onLogin }: AuthFormProps) {
     };
 
     const handleSendOtp = () => {
-        if (phone.length < 10) return;
+        if(phone.length < 10) return;
         setOtpSent(true);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!role) return;
+        if(!role) return;
         setLoading(true);
         setTimeout(() => {
             setLoading(false);
@@ -71,340 +71,308 @@ export default function AuthPage({ onLogin }: AuthFormProps) {
         }, 1200);
     };
 
+    // Indian Government Header Bar
+    const GovHeader = () => (
+        <div className="w-full">
+            {/* Tricolor strip */}
+            <div className="flex h-1.5">
+                <div className="flex-1" style={{ backgroundColor: '#FF9933' }}></div>
+                <div className="flex-1 bg-white"></div>
+                <div className="flex-1" style={{ backgroundColor: '#138808' }}></div>
+            </div>
+            {/* Main header */}
+            <div className="bg-[#1a237e] text-white px-4 py-3">
+                <div className="max-w-5xl mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-2xl">
+                            🏛️
+                        </div>
+                        <div>
+                            <h1 className="text-sm md:text-base font-bold tracking-wide">FloodSense AI</h1>
+                            <p className="text-[10px] md:text-xs text-blue-200 tracking-wide">National Disaster Response Force · Ministry of Home Affairs</p>
+                        </div>
+                    </div>
+                    <div className="hidden md:flex items-center gap-2 text-[10px] text-blue-200">
+                        <span>भारत सरकार</span>
+                        <span className="text-white/30">|</span>
+                        <span>Government of India</span>
+                    </div>
+                </div>
+            </div>
+            {/* Sub-nav */}
+            <div className="bg-[#283593] text-white/80 px-4 py-1.5 text-[10px] tracking-wide">
+                <div className="max-w-5xl mx-auto flex items-center justify-between">
+                    <span>AI-Enabled Real-Time Flash Flood Forecasting & Alert System</span>
+                    <span className="hidden sm:inline">🔒 Secured Portal</span>
+                </div>
+            </div>
+        </div>
+    );
+
     // Role selection screen
-    if (!role) {
+    if(!role) {
         return (
-            <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 relative overflow-hidden">
-                {/* Background effects */}
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-[radial-gradient(ellipse_at_20%_50%,rgba(56,189,248,0.08),transparent_50%)]" />
-                    <div className="absolute -bottom-1/2 -right-1/2 w-[200%] h-[200%] bg-[radial-gradient(ellipse_at_80%_50%,rgba(99,102,241,0.06),transparent_50%)]" />
+            <div className="min-h-screen w-full flex flex-col bg-[#f5f5f0]">
+                <GovHeader />
+
+                <div className="flex-1 flex items-center justify-center p-6">
+                    <div className="w-full max-w-2xl">
+                        {/* Notice */}
+                        <div className="bg-[#fff3cd] border border-[#ffc107] rounded px-4 py-3 mb-6 text-sm text-[#856404]">
+                            <strong>Notice:</strong> This portal is for flood risk monitoring and disaster response. Select your role to proceed.
+                        </div>
+
+                        {/* Role Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Citizen Card */}
+                            <button
+                                onClick={() => setRole("citizen")}
+                                className="group bg-white border-2 border-gray-200 rounded-lg p-6 text-left hover:border-[#1a237e] hover:shadow-md transition-all"
+                            >
+                                <div className="w-12 h-12 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center mb-4">
+                                    <Users className="w-6 h-6 text-[#1a237e]" />
+                                </div>
+                                <h2 className="text-lg font-bold text-gray-800 mb-1">Citizen Portal</h2>
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Receive flood alerts, view evacuation routes, and access multilingual warnings.
+                                </p>
+                                <div className="flex items-center text-[#1a237e] text-sm font-semibold group-hover:gap-2 transition-all">
+                                    Continue <ChevronRight className="w-4 h-4" />
+                                </div>
+                            </button>
+
+                            {/* NDRF Card */}
+                            <button
+                                onClick={() => setRole("authority")}
+                                className="group bg-white border-2 border-gray-200 rounded-lg p-6 text-left hover:border-[#b71c1c] hover:shadow-md transition-all"
+                            >
+                                <div className="w-12 h-12 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center mb-4">
+                                    <Siren className="w-6 h-6 text-[#b71c1c]" />
+                                </div>
+                                <h2 className="text-lg font-bold text-gray-800 mb-1">NDRF / Authority</h2>
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Command Dashboard with live sensors, resource deployment, and incident control.
+                                </p>
+                                <div className="flex items-center text-[#b71c1c] text-sm font-semibold group-hover:gap-2 transition-all">
+                                    Continue <ChevronRight className="w-4 h-4" />
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* Footer info */}
+                        <div className="mt-6 text-center text-xs text-gray-400">
+                            <Shield className="w-3 h-3 inline mr-1 -mt-0.5" />
+                            Data secured as per Government of India IT Guidelines &middot; NIC Certified
+                        </div>
+                    </div>
                 </div>
 
-                <div className="relative z-10 w-full max-w-2xl px-6">
-                    {/* Top Branding */}
-                    <div className="text-center mb-12">
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/10 border border-blue-500/20 mb-6">
-                            <Droplets className="w-10 h-10 text-blue-400" />
-                        </div>
-                        <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">
-                            Flood<span className="text-blue-400">Sense</span> AI
-                        </h1>
-                        <p className="text-slate-400 text-base">AI-Enabled Real-Time Flash Flood Forecasting Platform</p>
-                    </div>
-
-                    {/* Role Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        {/* Citizen Card */}
-                        <button
-                            onClick={() => setRole("citizen")}
-                            className="group relative bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-slate-800/80 p-8 text-left transition-all duration-300 hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-1"
-                        >
-                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="relative">
-                                <div className="w-14 h-14 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-5 group-hover:bg-blue-500/20 transition-colors">
-                                    <Users className="w-7 h-7 text-blue-400" />
-                                </div>
-                                <h2 className="text-xl font-bold text-white mb-2">Citizen</h2>
-                                <p className="text-sm text-slate-400 leading-relaxed mb-5">
-                                    Receive real-time flood alerts, evacuation routes, and multilingual warnings for your location.
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    {["Alerts", "Evacuation", "Shelters"].map(tag => (
-                                        <span key={tag} className="text-[10px] uppercase font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/15">
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        </button>
-
-                        {/* NDRF / Authority Card */}
-                        <button
-                            onClick={() => setRole("authority")}
-                            className="group relative bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-slate-800/80 p-8 text-left transition-all duration-300 hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1"
-                        >
-                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="relative">
-                                <div className="w-14 h-14 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-5 group-hover:bg-amber-500/20 transition-colors">
-                                    <Siren className="w-7 h-7 text-amber-400" />
-                                </div>
-                                <h2 className="text-xl font-bold text-white mb-2">NDRF / Authority</h2>
-                                <p className="text-sm text-slate-400 leading-relaxed mb-5">
-                                    Access the full Command Dashboard with live sensors, resource deployment, and incident control.
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    {["Command", "Deploy", "Analytics"].map(tag => (
-                                        <span key={tag} className="text-[10px] uppercase font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/15">
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        </button>
-                    </div>
-
-                    <p className="text-center text-xs text-slate-600 mt-8">
-                        <Shield className="w-3 h-3 inline mr-1 -mt-0.5" />
-                        Secured &amp; encrypted for disaster response operations
-                    </p>
+                {/* Gov footer */}
+                <div className="bg-[#1a237e] text-white/60 px-4 py-3 text-[10px] text-center">
+                    © 2024 FloodSense AI &middot; National Disaster Response Force &middot; Ministry of Home Affairs, Government of India
                 </div>
             </div>
         );
     }
 
     const isCitizen = role === "citizen";
-    const accentColor = isCitizen ? "blue" : "amber";
+    const accentColor = isCitizen ? "#1a237e" : "#b71c1c";
 
     return (
-        <div className="min-h-screen w-full flex bg-slate-950 relative overflow-hidden">
-            {/* Background */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className={`absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-[radial-gradient(ellipse_at_20%_50%,rgba(${isCitizen ? "56,189,248" : "245,158,11"},0.08),transparent_50%)]`} />
-                <div className={`absolute -bottom-1/2 -right-1/2 w-[200%] h-[200%] bg-[radial-gradient(ellipse_at_80%_50%,rgba(${isCitizen ? "99,102,241" : "202,138,4"},0.06),transparent_50%)]`} />
-            </div>
+        <div className="min-h-screen w-full flex flex-col bg-[#f5f5f0]">
+            <GovHeader />
 
-            {/* Left Branding Panel */}
-            <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12">
-                <div className="max-w-lg text-center">
-                    <div className={`inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br ${isCitizen ? "from-blue-500/20 to-cyan-500/10 border-blue-500/20" : "from-amber-500/20 to-orange-500/10 border-amber-500/20"} border mb-8`}>
-                        {isCitizen
-                            ? <Droplets className="w-12 h-12 text-blue-400" />
-                            : <Siren className="w-12 h-12 text-amber-400" />
-                        }
-                    </div>
-                    <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">
-                        Flood<span className={isCitizen ? "text-blue-400" : "text-amber-400"}>Sense</span> AI
-                    </h1>
-                    <p className="text-lg text-slate-400 leading-relaxed mb-2">
-                        {isCitizen
-                            ? "Stay safe with AI-powered flood alerts, evacuation routing, and real-time risk monitoring."
-                            : "NDRF Command Station — Full tactical disaster intelligence and resource deployment."
-                        }
-                    </p>
+            <div className="flex-1 flex items-center justify-center p-6">
+                <div className="w-full max-w-md">
+
+                    {/* Back link */}
                     <button onClick={() => { setRole(null); setOtpSent(false); setOtp(""); }}
-                        className="mt-6 text-sm text-slate-500 hover:text-slate-300 underline underline-offset-4 transition-colors">
-                        ← Switch Role
+                        className="text-sm text-[#1a237e] hover:underline mb-4 flex items-center gap-1">
+                        ← Change Role
                     </button>
 
-                    {/* Feature badges */}
-                    <div className="grid grid-cols-2 gap-3 mt-8 text-left">
-                        {(isCitizen
-                            ? [
-                                { icon: "📱", text: "Multilingual Alerts" },
-                                { icon: "🗺️", text: "Evacuation Routing" },
-                                { icon: "📡", text: "Mesh Network Fallback" },
-                                { icon: "🏠", text: "Nearest Shelter Finder" },
-                            ]
-                            : [
-                                { icon: "🛰️", text: "Live Sensor Dashboard" },
-                                { icon: "📊", text: "Risk Heatmaps" },
-                                { icon: "🚁", text: "Resource Deployment" },
-                                { icon: "⚡", text: "Incident Command" },
-                            ]
-                        ).map((item, i) => (
-                            <div key={i} className="flex items-center gap-3 bg-white/[0.03] rounded-xl px-4 py-3 border border-white/[0.05]">
-                                <span className="text-lg">{item.icon}</span>
-                                <span className="text-sm text-slate-300">{item.text}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Right Auth Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
-                <div className="w-full max-w-md">
-                    {/* Mobile header */}
-                    <div className="lg:hidden text-center mb-6">
-                        <div className="inline-flex items-center gap-3 mb-2">
-                            <div className={`p-2.5 rounded-xl border ${isCitizen ? "bg-blue-500/20 border-blue-500/20" : "bg-amber-500/20 border-amber-500/20"}`}>
-                                {isCitizen ? <Droplets className="w-7 h-7 text-blue-400" /> : <Siren className="w-7 h-7 text-amber-400" />}
-                            </div>
-                            <h1 className="text-3xl font-bold text-white">
-                                Flood<span className={isCitizen ? "text-blue-400" : "text-amber-400"}>Sense</span>
-                            </h1>
-                        </div>
-                        <p className="text-sm text-slate-500">{isCitizen ? "Citizen Portal" : "NDRF Command Portal"}</p>
-                        <button onClick={() => { setRole(null); setOtpSent(false); setOtp(""); }}
-                            className="mt-2 text-xs text-slate-600 hover:text-slate-400 underline underline-offset-4 transition-colors">
-                            ← Switch Role
-                        </button>
-                    </div>
-
                     {/* Auth Card */}
-                    <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-800/80 shadow-2xl shadow-black/20 p-8">
-                        {/* Role badge */}
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-5 ${isCitizen ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"}`}>
-                            {isCitizen ? <Users className="w-3.5 h-3.5" /> : <BadgeCheck className="w-3.5 h-3.5" />}
-                            {isCitizen ? "Citizen" : "NDRF / Authority"}
-                        </div>
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
 
-                        {/* Login / SignUp Tabs */}
-                        <div className="flex bg-slate-800/60 rounded-xl p-1 mb-6">
-                            <button onClick={() => { setMode("login"); setOtpSent(false); }}
-                                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-300 ${mode === "login" ? `bg-${accentColor}-600 text-white shadow-lg shadow-${accentColor}-600/20` : "text-slate-400 hover:text-slate-300"}`}
-                                style={mode === "login" ? { backgroundColor: isCitizen ? "#2563eb" : "#d97706" } : {}}
-                            >
-                                Login
-                            </button>
-                            <button onClick={() => { setMode("signup"); setOtpSent(false); }}
-                                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-300 ${mode === "signup" ? `bg-${accentColor}-600 text-white shadow-lg shadow-${accentColor}-600/20` : "text-slate-400 hover:text-slate-300"}`}
-                                style={mode === "signup" ? { backgroundColor: isCitizen ? "#2563eb" : "#d97706" } : {}}
-                            >
-                                Sign Up
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {/* Full Name (Signup) */}
-                            {mode === "signup" && (
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Full Name</label>
-                                    <div className="relative">
-                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                                        <input type="text" placeholder="Enter your full name" value={fullName}
-                                            onChange={e => setFullName(e.target.value)} required
-                                            className="w-full pl-11 pr-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all" />
-                                    </div>
+                        {/* Card header */}
+                        <div className="px-6 py-4 border-b border-gray-100" style={{ backgroundColor: accentColor + '0a' }}>
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded flex items-center justify-center text-white" style={{ backgroundColor: accentColor }}>
+                                    {isCitizen ? <Users className="w-4 h-4" /> : <BadgeCheck className="w-4 h-4" />}
                                 </div>
-                            )}
-
-                            {/* NDRF-specific fields (Signup) */}
-                            {mode === "signup" && !isCitizen && (
-                                <>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Service ID</label>
-                                            <div className="relative">
-                                                <BadgeCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                                                <input type="text" placeholder="NDRF-XXXX" value={serviceId}
-                                                    onChange={e => setServiceId(e.target.value)} required
-                                                    className="w-full pl-11 pr-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all" />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Rank</label>
-                                            <div className="relative">
-                                                <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                                                <input type="text" placeholder="e.g. Inspector" value={rank}
-                                                    onChange={e => setRank(e.target.value)} required
-                                                    className="w-full pl-11 pr-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Battalion</label>
-                                        <select value={battalion} onChange={e => setBattalion(e.target.value)} required
-                                            className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all appearance-none">
-                                            <option value="" className="bg-slate-800">Select Battalion</option>
-                                            {NDRF_BATTALIONS.map(b => <option key={b} value={b} className="bg-slate-800">{b}</option>)}
-                                        </select>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Mobile Number */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Mobile Number</label>
-                                <div className="relative flex gap-2">
-                                    <div className="flex items-center px-3.5 bg-slate-800/60 border border-slate-700/50 rounded-xl text-sm text-slate-400">+91</div>
-                                    <div className="relative flex-1">
-                                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                                        <input type="tel" placeholder="10-digit mobile" maxLength={10} value={phone}
-                                            onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} required
-                                            className="w-full pl-11 pr-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all" />
-                                    </div>
+                                <div>
+                                    <h2 className="font-bold text-gray-800">{isCitizen ? "Citizen Portal" : "NDRF / Authority Portal"}</h2>
+                                    <p className="text-xs text-gray-500">{mode === "login" ? "Login to your account" : "Create new account"}</p>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* State & District (Signup) */}
-                            {mode === "signup" && (
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">State</label>
+                        <div className="p-6">
+                            {/* Login / SignUp Tabs */}
+                            <div className="flex border border-gray-200 rounded mb-5 overflow-hidden">
+                                <button onClick={() => { setMode("login"); setOtpSent(false); }}
+                                    className="flex-1 py-2 text-sm font-semibold transition-all"
+                                    style={mode === "login" ? { backgroundColor: accentColor, color: "white" } : { color: "#6b7280" }}>
+                                    Login
+                                </button>
+                                <button onClick={() => { setMode("signup"); setOtpSent(false); }}
+                                    className="flex-1 py-2 text-sm font-semibold transition-all"
+                                    style={mode === "signup" ? { backgroundColor: accentColor, color: "white" } : { color: "#6b7280" }}>
+                                    Sign Up
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {/* Full Name */}
+                                {mode === "signup" && (
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Full Name *</label>
                                         <div className="relative">
-                                            <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                                            <select value={state} onChange={e => setState(e.target.value)} required
-                                                className="w-full pl-11 pr-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none">
-                                                <option value="" className="bg-slate-800">Select State</option>
-                                                {INDIAN_STATES.map(s => <option key={s} value={s} className="bg-slate-800">{s}</option>)}
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <input type="text" placeholder="Enter your full name" value={fullName}
+                                                onChange={e => setFullName(e.target.value)} required
+                                                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#1a237e]" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* NDRF fields */}
+                                {mode === "signup" && !isCitizen && (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Service ID *</label>
+                                                <div className="relative">
+                                                    <BadgeCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <input type="text" placeholder="NDRF-XXXX" value={serviceId}
+                                                        onChange={e => setServiceId(e.target.value)} required
+                                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-[#b71c1c]" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Rank *</label>
+                                                <div className="relative">
+                                                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <input type="text" placeholder="e.g. Inspector" value={rank}
+                                                        onChange={e => setRank(e.target.value)} required
+                                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-[#b71c1c]" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Battalion *</label>
+                                            <select value={battalion} onChange={e => setBattalion(e.target.value)} required
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-[#b71c1c]">
+                                                <option value="">Select Battalion</option>
+                                                {NDRF_BATTALIONS.map(b => <option key={b} value={b}>{b}</option>)}
                                             </select>
                                         </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">District</label>
-                                        <div className="relative">
-                                            <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                                            <input type="text" placeholder="District" value={district}
-                                                onChange={e => setDistrict(e.target.value)} required
-                                                className="w-full pl-11 pr-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all" />
+                                    </>
+                                )}
+
+                                {/* Mobile Number */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Mobile Number *</label>
+                                    <div className="flex gap-2">
+                                        <div className="flex items-center px-3 bg-gray-50 border border-gray-300 rounded text-sm text-gray-600 font-medium">+91</div>
+                                        <div className="relative flex-1">
+                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <input type="tel" placeholder="10-digit mobile number" maxLength={10} value={phone}
+                                                onChange={e => setPhone(e.target.value.replace(/\D/g, ""))} required
+                                                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#1a237e]" />
                                         </div>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* GPS Permission (Signup) */}
-                            {mode === "signup" && (
-                                <button type="button" onClick={handleRequestGPS}
-                                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${gpsGranted ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400" : "bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:border-blue-500/30 hover:text-blue-300"}`}>
-                                    <Locate className="w-4 h-4" />
-                                    {gpsGranted ? "✓ GPS Location Captured" : "Grant GPS Permission"}
-                                </button>
-                            )}
-
-                            {/* OTP Flow */}
-                            {!otpSent ? (
-                                <button type="button" onClick={handleSendOtp} disabled={phone.length < 10}
-                                    className="w-full py-3.5 rounded-xl text-sm font-semibold text-white shadow-lg transition-all duration-300 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 disabled:shadow-none"
-                                    style={{
-                                        background: phone.length >= 10
-                                            ? (isCitizen ? "linear-gradient(to right, #2563eb, #3b82f6)" : "linear-gradient(to right, #d97706, #f59e0b)")
-                                            : undefined,
-                                    }}>
-                                    Send OTP
-                                </button>
-                            ) : (
-                                <>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Enter OTP</label>
-                                        <div className="flex gap-2 justify-center">
-                                            {[0, 1, 2, 3, 4, 5].map(i => (
-                                                <input key={i} type="text" maxLength={1} value={otp[i] || ""}
-                                                    onChange={e => {
-                                                        const val = e.target.value.replace(/\D/g, "");
-                                                        const newOtp = otp.split(""); newOtp[i] = val; setOtp(newOtp.join(""));
-                                                        if (val && e.target.nextElementSibling) (e.target.nextElementSibling as HTMLInputElement).focus();
-                                                    }}
-                                                    className={`w-11 h-12 text-center text-lg font-mono bg-slate-800/60 border border-slate-700/50 rounded-lg text-slate-200 focus:outline-none focus:ring-1 transition-all ${isCitizen ? "focus:border-blue-500/50 focus:ring-blue-500/20" : "focus:border-amber-500/50 focus:ring-amber-500/20"}`} />
-                                            ))}
+                                {/* State & District */}
+                                {mode === "signup" && (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">State *</label>
+                                            <div className="relative">
+                                                <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <select value={state} onChange={e => setState(e.target.value)} required
+                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#1a237e]">
+                                                    <option value="">Select State</option>
+                                                    {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                            </div>
                                         </div>
-                                        <p className="text-center text-xs text-slate-600 mt-1">
-                                            OTP sent to +91 {phone} · <button type="button" onClick={handleSendOtp} className="text-blue-500 hover:underline">Resend</button>
-                                        </p>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">District *</label>
+                                            <div className="relative">
+                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <input type="text" placeholder="District" value={district}
+                                                    onChange={e => setDistrict(e.target.value)} required
+                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#1a237e]" />
+                                            </div>
+                                        </div>
                                     </div>
+                                )}
 
-                                    <button type="submit" disabled={otp.length < 6 || loading}
-                                        className="w-full py-3.5 rounded-xl text-sm font-semibold text-white shadow-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-40"
-                                        style={{ background: isCitizen ? "linear-gradient(to right, #2563eb, #06b6d4)" : "linear-gradient(to right, #d97706, #ea580c)" }}>
-                                        {loading ? (
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        ) : (
-                                            <>
-                                                {mode === "login" ? "Login" : "Create Account"}
-                                                <ChevronRight className="w-4 h-4" />
-                                            </>
-                                        )}
+                                {/* GPS */}
+                                {mode === "signup" && (
+                                    <button type="button" onClick={handleRequestGPS}
+                                        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded text-sm font-medium border transition-all ${gpsGranted ? "bg-green-50 border-green-300 text-green-700" : "bg-gray-50 border-gray-300 text-gray-600 hover:border-[#1a237e]"}`}>
+                                        <Locate className="w-4 h-4" />
+                                        {gpsGranted ? "✓ GPS Location Captured" : "Grant GPS Permission"}
                                     </button>
-                                </>
-                            )}
-                        </form>
+                                )}
+
+                                {/* OTP Flow */}
+                                {!otpSent ? (
+                                    <button type="button" onClick={handleSendOtp} disabled={phone.length < 10}
+                                        className="w-full py-2.5 rounded text-sm font-bold text-white transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                        style={phone.length >= 10 ? { backgroundColor: accentColor } : undefined}>
+                                        Send OTP
+                                    </button>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Enter OTP</label>
+                                            <div className="flex gap-2 justify-center">
+                                                {[0, 1, 2, 3, 4, 5].map(i => (
+                                                    <input key={i} type="text" maxLength={1} value={otp[i] || ""}
+                                                        onChange={e => {
+                                                            const val = e.target.value.replace(/\D/g, "");
+                                                            const newOtp = otp.split(""); newOtp[i] = val; setOtp(newOtp.join(""));
+                                                            if(val && e.target.nextElementSibling) (e.target.nextElementSibling as HTMLInputElement).focus();
+                                                        }}
+                                                        className="w-10 h-11 text-center text-lg font-bold border border-gray-300 rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#1a237e]" />
+                                                ))}
+                                            </div>
+                                            <p className="text-center text-xs text-gray-500 mt-2">
+                                                OTP sent to +91 {phone} &middot; <button type="button" onClick={handleSendOtp} className="text-[#1a237e] font-semibold hover:underline">Resend</button>
+                                            </p>
+                                        </div>
+
+                                        <button type="submit" disabled={otp.length < 6 || loading}
+                                            className="w-full py-2.5 rounded text-sm font-bold text-white transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+                                            style={{ backgroundColor: accentColor }}>
+                                            {loading ? (
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            ) : (
+                                                <>
+                                                    {mode === "login" ? "Login" : "Create Account"}
+                                                    <ChevronRight className="w-4 h-4" />
+                                                </>
+                                            )}
+                                        </button>
+                                    </>
+                                )}
+                            </form>
+                        </div>
                     </div>
 
-                    <p className="text-center text-xs text-slate-600 mt-6">
+                    <p className="text-center text-[11px] text-gray-400 mt-4">
                         By continuing, you agree to FloodSense AI&apos;s Terms of Service and Privacy Policy
                     </p>
                 </div>
+            </div>
+
+            {/* Gov footer */}
+            <div className="bg-[#1a237e] text-white/60 px-4 py-3 text-[10px] text-center">
+                © 2024 FloodSense AI &middot; National Disaster Response Force &middot; Ministry of Home Affairs, Government of India
             </div>
         </div>
     );

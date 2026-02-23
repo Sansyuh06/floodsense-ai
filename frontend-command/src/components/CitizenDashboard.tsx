@@ -3,13 +3,13 @@
 import React, { useState, useEffect } from "react";
 import {
     AlertTriangle, MapPin, Bell, Navigation, Globe, Phone,
-    Droplets, ChevronRight, Shield, LogOut, ArrowLeft, X,
-    Siren, BarChart3, TrendingUp, Users, Loader2
+    ChevronRight, Shield, LogOut, ArrowLeft,
+    Siren, BarChart3, Users, Loader2
 } from "lucide-react";
 import { STATES_DATA, getHighRiskDistricts, getStateRiskSummary, type StateData, type DistrictData } from "@/data/statesData";
-import { fetchRiskPrediction, fetchWeatherDirect, type RiskPrediction, type FloodAlert } from "@/lib/api";
+import { fetchRiskPrediction, type RiskPrediction, type FloodAlert } from "@/lib/api";
 
-type View = "home" | "map" | "evacuate" | "shelters" | "sos" | "alert-family" | "state-analysis" | "district-detail";
+type View = "home" | "evacuate" | "shelters" | "sos" | "alert-family" | "state-analysis" | "district-detail";
 
 export default function CitizenDashboard({ onLogout }: { onLogout: () => void }) {
     const [view, setView] = useState<View>("home");
@@ -23,11 +23,9 @@ export default function CitizenDashboard({ onLogout }: { onLogout: () => void })
     const [liveAlerts, setLiveAlerts] = useState<FloodAlert[]>([]);
     const [loadingRisk, setLoadingRisk] = useState(true);
 
-    // Fetch live risk data on mount
     useEffect(() => {
         async function loadRisk() {
             try {
-                // Default to Delhi; in production, use GPS
                 const data = await fetchRiskPrediction(28.6139, 77.2090, "Delhi", "Delhi");
                 setLiveRisk(data);
                 if(data.alerts) setLiveAlerts(data.alerts);
@@ -38,7 +36,6 @@ export default function CitizenDashboard({ onLogout }: { onLogout: () => void })
             }
         }
         loadRisk();
-        // Refresh every 5 minutes
         const interval = setInterval(loadRisk, 5 * 60 * 1000);
         return () => clearInterval(interval);
     }, []);
@@ -46,98 +43,98 @@ export default function CitizenDashboard({ onLogout }: { onLogout: () => void })
     const languages = [
         "English", "हिन्दी", "বাংলা", "తెలుగు", "தமிழ்", "मराठी",
         "ગુજરાતી", "ಕನ್ನಡ", "മലയാളം", "ਪੰਜਾਬੀ", "অসমীয়া", "ଓଡ଼ିଆ",
-        "سنڌي", "संस्कृतम्", "नेपाली", "डोगरी", "মৈতৈলোন্", "سائراءکی",
-        "বড়ো", "ꯃꯤꯇꯩꯂꯣꯟ", "கொங்கணி", "𑚊𑚞𑚤𑚥𑚒𑚎𑚌",
     ];
-
     const highRiskDistricts = getHighRiskDistricts().slice(0, 5);
 
-    const riskColor = (level: string) =>
-        level === "HIGH" || level === "SEVERE" ? "red" : level === "MODERATE" ? "amber" : "green";
-
-    // Use live alerts if available, fallback to static
     const alertItems = liveAlerts.length > 0
         ? liveAlerts.map(a => ({
             severity: a.severity,
             time: new Date(a.timestamp).toLocaleTimeString(),
             msg: a.message,
-            color: a.severity === "HIGH" || a.severity === "SEVERE" ? "red" : a.severity === "MODERATE" ? "amber" : "green",
         }))
         : [
-            { severity: "HIGH", time: "2 min ago", msg: "Heavy rainfall expected. Seek higher ground.", color: "red" },
-            { severity: "MODERATE", time: "15 min ago", msg: "Water levels rising. Prepare emergency kit.", color: "amber" },
-            { severity: "LOW", time: "1 hr ago", msg: "Light showers expected. No immediate risk.", color: "green" },
+            { severity: "LOW" as const, time: "Now", msg: "No active alerts. All parameters within safe range." },
         ];
 
-    // ─── HEADER ───
-    const Header = ({ title, showBack }: { title?: string; showBack?: boolean }) => (
-        <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-lg border-b border-slate-800/50">
-            <div className="max-w-lg mx-auto flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-2">
-                    {showBack && (
-                        <button onClick={() => setView("home")} className="text-slate-400 hover:text-white mr-1 transition-colors">
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                    )}
-                    <Droplets className="w-6 h-6 text-blue-400" />
-                    <span className="text-lg font-bold">{title || "FloodSense"}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <button onClick={() => setShowLangMenu(!showLangMenu)}
-                            className="flex items-center gap-1.5 text-xs bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700/50 hover:border-blue-500/30 transition-colors">
-                            <Globe className="w-3.5 h-3.5 text-blue-400" /> {language}
-                        </button>
-                        {showLangMenu && (
-                            <div className="absolute right-0 mt-1 w-40 max-h-60 overflow-y-auto bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50">
-                                {languages.map(lang => (
-                                    <button key={lang} onClick={() => { setLanguage(lang); setShowLangMenu(false); }}
-                                        className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-700 transition-colors ${language === lang ? "text-blue-400 bg-slate-700/50" : "text-slate-300"}`}>
-                                        {lang}
-                                    </button>
-                                ))}
-                            </div>
+    const severityBadge = (sev: string) => {
+        if(sev === "SEVERE" || sev === "HIGH") return "bg-red-100 text-red-800 border-red-200";
+        if(sev === "MODERATE") return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-green-100 text-green-800 border-green-200";
+    };
+
+    // ─── GOV HEADER ───
+    const GovHeader = ({ title, showBack }: { title?: string; showBack?: boolean }) => (
+        <div className="w-full">
+            <div className="flex h-1"><div className="flex-1" style={{ backgroundColor: '#FF9933' }} /><div className="flex-1 bg-white" /><div className="flex-1" style={{ backgroundColor: '#138808' }} /></div>
+            <div className="bg-[#1a237e] text-white px-4 py-2.5">
+                <div className="max-w-lg mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        {showBack && (
+                            <button onClick={() => setView("home")} className="text-white/70 hover:text-white mr-1">
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
                         )}
+                        <span className="text-2xl">🏛️</span>
+                        <div>
+                            <h1 className="text-sm font-bold">{title || "FloodSense AI"}</h1>
+                            <p className="text-[9px] text-blue-200">NDRF · Ministry of Home Affairs</p>
+                        </div>
                     </div>
-                    <button onClick={onLogout} className="flex items-center gap-1.5 text-xs bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/20 font-semibold transition-colors">
-                        <LogOut className="w-3.5 h-3.5" /> Logout
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <button onClick={() => setShowLangMenu(!showLangMenu)}
+                                className="flex items-center gap-1 text-[10px] bg-white/10 px-2 py-1 rounded">
+                                <Globe className="w-3 h-3" /> {language}
+                            </button>
+                            {showLangMenu && (
+                                <div className="absolute right-0 mt-1 w-36 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded shadow-lg z-50">
+                                    {languages.map(lang => (
+                                        <button key={lang} onClick={() => { setLanguage(lang); setShowLangMenu(false); }}
+                                            className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 ${language === lang ? "text-[#1a237e] font-bold bg-blue-50" : "text-gray-700"}`}>
+                                            {lang}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <button onClick={onLogout} className="text-[10px] bg-white/10 px-2 py-1 rounded flex items-center gap-1 hover:bg-white/20">
+                            <LogOut className="w-3 h-3" /> Logout
+                        </button>
+                    </div>
                 </div>
             </div>
-        </header>
+        </div>
     );
 
     // ─── EVACUATE VIEW ───
     if(view === "evacuate") {
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-100">
-                <Header title="Evacuation Route" showBack />
+            <div className="min-h-screen bg-[#f5f5f0]">
+                <GovHeader title="Evacuation Route" showBack />
                 <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5">
-                        <h2 className="text-lg font-bold text-blue-300 mb-2">🧭 Nearest Safe Route</h2>
-                        <p className="text-sm text-slate-300 mb-4">Your current location has been detected. The safest evacuation route avoids all flood-prone roads.</p>
-                        <div className="space-y-3">
+                    <div className="bg-white border border-gray-200 rounded-lg p-5">
+                        <h2 className="text-base font-bold text-gray-800 mb-1">🧭 Nearest Safe Route</h2>
+                        <p className="text-sm text-gray-500 mb-4">Safest evacuation route avoiding all flood-prone roads.</p>
+                        <div className="space-y-2">
                             {[
                                 { step: 1, dir: "Head North on NH-44", dist: "1.2 km", safe: true },
                                 { step: 2, dir: "Turn Right onto Elevated Flyover", dist: "0.8 km", safe: true },
                                 { step: 3, dir: "⚠️ Avoid Main Street (Flooded)", dist: "—", safe: false },
                                 { step: 4, dir: "Continue to Relief Camp #3", dist: "2.1 km", safe: true },
                             ].map(r => (
-                                <div key={r.step} className={`flex items-center gap-3 p-3 rounded-xl ${r.safe ? "bg-slate-800/50 border border-slate-700/30" : "bg-red-500/10 border border-red-500/20"}`}>
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${r.safe ? "bg-blue-500/20 text-blue-400" : "bg-red-500/20 text-red-400"}`}>
-                                        {r.step}
-                                    </div>
+                                <div key={r.step} className={`flex items-center gap-3 p-3 rounded border ${r.safe ? "bg-gray-50 border-gray-200" : "bg-red-50 border-red-200"}`}>
+                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ${r.safe ? "bg-[#1a237e]" : "bg-red-500"}`}>{r.step}</div>
                                     <div className="flex-1">
-                                        <p className={`text-sm font-medium ${r.safe ? "text-slate-200" : "text-red-300"}`}>{r.dir}</p>
-                                        <p className="text-[10px] text-slate-500">{r.dist}</p>
+                                        <p className={`text-sm font-medium ${r.safe ? "text-gray-800" : "text-red-700"}`}>{r.dir}</p>
+                                        <p className="text-[10px] text-gray-400">{r.dist}</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </div>
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
-                        <p className="text-sm text-emerald-300 font-semibold">🏕️ Destination: Relief Camp #3</p>
-                        <p className="text-xs text-slate-400 mt-1">Capacity: 500 people · Distance: 4.1 km · ETA: 25 min on foot</p>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                        <p className="text-sm text-green-800 font-semibold">🏕️ Destination: Relief Camp #3</p>
+                        <p className="text-xs text-green-600 mt-1">Capacity: 500 · Distance: 4.1 km · ETA: 25 min on foot</p>
                     </div>
                 </div>
             </div>
@@ -147,8 +144,8 @@ export default function CitizenDashboard({ onLogout }: { onLogout: () => void })
     // ─── SHELTERS VIEW ───
     if(view === "shelters") {
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-100">
-                <Header title="Nearby Shelters" showBack />
+            <div className="min-h-screen bg-[#f5f5f0]">
+                <GovHeader title="Nearby Shelters" showBack />
                 <div className="max-w-lg mx-auto px-4 py-5 space-y-3">
                     {[
                         { name: "Relief Camp #3 - Govt School", dist: "2.1 km", cap: "500", avail: "187", status: "Open" },
@@ -156,17 +153,16 @@ export default function CitizenDashboard({ onLogout }: { onLogout: () => void })
                         { name: "Stadium Emergency Shelter", dist: "5.8 km", cap: "1200", avail: "640", status: "Open" },
                         { name: "Temple Complex Shelter", dist: "1.8 km", cap: "150", avail: "0", status: "Full" },
                     ].map((s, i) => (
-                        <div key={i} className={`rounded-xl border p-4 ${s.status === "Full" ? "bg-red-500/5 border-red-500/20 opacity-60" : "bg-slate-900/60 border-slate-800/50"}`}>
+                        <div key={i} className={`bg-white border rounded-lg p-4 ${s.status === "Full" ? "border-red-200 opacity-60" : "border-gray-200"}`}>
                             <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-bold text-slate-200">{s.name}</h3>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${s.status === "Full" ? "bg-red-500/20 text-red-400" : "bg-emerald-500/20 text-emerald-400"}`}>{s.status}</span>
+                                <h3 className="text-sm font-bold text-gray-800">{s.name}</h3>
+                                <span className={`text-[10px] px-2 py-0.5 rounded font-bold border ${s.status === "Full" ? "bg-red-50 text-red-600 border-red-200" : "bg-green-50 text-green-700 border-green-200"}`}>{s.status}</span>
                             </div>
-                            <div className="flex gap-4 text-[11px] text-slate-400">
-                                <span>📍 {s.dist}</span>
-                                <span>👥 {s.avail}/{s.cap} available</span>
+                            <div className="flex gap-4 text-xs text-gray-500">
+                                <span>📍 {s.dist}</span><span>👥 {s.avail}/{s.cap} available</span>
                             </div>
                             {s.status !== "Full" && (
-                                <button onClick={() => setView("evacuate")} className="mt-3 w-full text-xs font-semibold bg-blue-600/20 text-blue-400 border border-blue-500/20 py-2 rounded-lg hover:bg-blue-600/30 transition-colors">
+                                <button onClick={() => setView("evacuate")} className="mt-3 w-full text-xs font-bold bg-[#1a237e] text-white py-2 rounded hover:bg-[#283593] transition-colors">
                                     Navigate Here →
                                 </button>
                             )}
@@ -180,49 +176,49 @@ export default function CitizenDashboard({ onLogout }: { onLogout: () => void })
     // ─── SOS VIEW ───
     if(view === "sos") {
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-100">
-                <Header title="Emergency SOS" showBack />
+            <div className="min-h-screen bg-[#f5f5f0]">
+                <GovHeader title="Emergency SOS" showBack />
                 <div className="max-w-lg mx-auto px-4 py-5 space-y-5">
                     {!sosSent ? (
-                        <div className="text-center space-y-6">
-                            <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-red-500/20 border-2 border-red-500/40 animate-pulse">
-                                <Siren className="w-14 h-14 text-red-400" />
+                        <div className="text-center space-y-5">
+                            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-100 border-2 border-red-300">
+                                <Siren className="w-12 h-12 text-red-600" />
                             </div>
-                            <h2 className="text-2xl font-bold text-red-300">Send Emergency SOS</h2>
-                            <p className="text-sm text-slate-400 max-w-xs mx-auto">This will alert NDRF rescue teams with your GPS coordinates and personal details.</p>
+                            <h2 className="text-xl font-bold text-red-800">Send Emergency SOS</h2>
+                            <p className="text-sm text-gray-600 max-w-xs mx-auto">This will alert NDRF rescue teams with your GPS coordinates and personal details.</p>
                             <button onClick={() => setSosSent(true)}
-                                className="w-full py-4 bg-gradient-to-r from-red-600 to-red-500 rounded-xl text-lg font-bold shadow-xl shadow-red-600/30 animate-pulse hover:animate-none hover:from-red-500 hover:to-red-400 transition-all">
+                                className="w-full py-3 bg-red-600 text-white rounded-lg text-base font-bold hover:bg-red-700 transition-colors">
                                 🚨 SEND SOS ALERT
                             </button>
-                            <div className="space-y-2 text-left">
-                                <p className="text-xs text-slate-500 font-semibold uppercase">Direct Helplines:</p>
+                            <div className="bg-white border border-gray-200 rounded-lg p-4 text-left space-y-2">
+                                <p className="text-xs text-gray-500 font-bold uppercase">Direct Helplines:</p>
                                 {[
                                     { name: "NDRF Helpline", num: "011-24363260" },
                                     { name: "Disaster Mgmt", num: "1078" },
                                     { name: "Emergency", num: "112" },
                                 ].map(h => (
                                     <a key={h.num} href={`tel:${h.num}`}
-                                        className="flex items-center justify-between bg-slate-800/60 border border-slate-700/40 rounded-lg px-4 py-3 hover:border-blue-500/30 transition-colors">
-                                        <span className="text-sm text-slate-300">{h.name}</span>
-                                        <span className="text-sm font-mono text-blue-400 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {h.num}</span>
+                                        className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-4 py-2.5 hover:border-[#1a237e] transition-colors">
+                                        <span className="text-sm text-gray-700">{h.name}</span>
+                                        <span className="text-sm font-mono text-[#1a237e] flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {h.num}</span>
                                     </a>
                                 ))}
                             </div>
                         </div>
                     ) : (
                         <div className="text-center space-y-4">
-                            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-                                <Shield className="w-10 h-10 text-emerald-400" />
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 border border-green-300">
+                                <Shield className="w-8 h-8 text-green-600" />
                             </div>
-                            <h2 className="text-xl font-bold text-emerald-300">SOS Alert Sent ✓</h2>
-                            <p className="text-sm text-slate-400">NDRF has been notified with your GPS coordinates. Rescue team ETA: ~15 minutes.</p>
-                            <div className="bg-slate-800/60 border border-slate-700/40 rounded-xl p-4 text-left space-y-1">
-                                <p className="text-xs text-slate-500">Alert ID: <span className="font-mono text-slate-300">SOS-2026-{Math.floor(Math.random() * 9000 + 1000)}</span></p>
-                                <p className="text-xs text-slate-500">Location: <span className="font-mono text-slate-300">28.6139°N, 77.2090°E</span></p>
-                                <p className="text-xs text-slate-500">Status: <span className="text-emerald-400 font-semibold">Acknowledged</span></p>
+                            <h2 className="text-lg font-bold text-green-800">SOS Alert Sent ✓</h2>
+                            <p className="text-sm text-gray-600">NDRF has been notified. Rescue team ETA: ~15 minutes.</p>
+                            <div className="bg-white border border-gray-200 rounded-lg p-4 text-left text-xs text-gray-600 space-y-1">
+                                <p>Alert ID: <span className="font-mono text-gray-800">SOS-2026-{Math.floor(Math.random() * 9000 + 1000)}</span></p>
+                                <p>Location: <span className="font-mono text-gray-800">28.6139°N, 77.2090°E</span></p>
+                                <p>Status: <span className="text-green-600 font-bold">Acknowledged</span></p>
                             </div>
                             <button onClick={() => { setSosSent(false); setView("home"); }}
-                                className="w-full py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-700 transition-colors">
+                                className="w-full py-2.5 bg-[#1a237e] text-white rounded-lg text-sm font-bold hover:bg-[#283593] transition-colors">
                                 Back to Dashboard
                             </button>
                         </div>
@@ -235,41 +231,46 @@ export default function CitizenDashboard({ onLogout }: { onLogout: () => void })
     // ─── ALERT FAMILY VIEW ───
     if(view === "alert-family") {
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-100">
-                <Header title="Alert Family" showBack />
+            <div className="min-h-screen bg-[#f5f5f0]">
+                <GovHeader title="Alert Family" showBack />
                 <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
                     {!familyAlerted ? (
                         <>
-                            <p className="text-sm text-slate-400">Send your safety status and location to your emergency contacts via SMS.</p>
+                            <p className="text-sm text-gray-600">Send your safety status and location to emergency contacts via SMS.</p>
                             <div className="space-y-2">
                                 {[
                                     { name: "Mom", phone: "+91 98765 XXXXX" },
                                     { name: "Dad", phone: "+91 98764 XXXXX" },
                                     { name: "Brother", phone: "+91 87654 XXXXX" },
                                 ].map((c, i) => (
-                                    <div key={i} className="flex items-center justify-between bg-slate-900/60 border border-slate-800/50 rounded-xl px-4 py-3">
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-200">{c.name}</p>
-                                            <p className="text-xs text-slate-500 font-mono">{c.phone}</p>
+                                    <div key={i} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+                                                <Users className="w-4 h-4 text-[#1a237e]" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-semibold text-gray-800">{c.name}</p>
+                                                <p className="text-[10px] text-gray-400">{c.phone}</p>
+                                            </div>
                                         </div>
-                                        <Users className="w-4 h-4 text-slate-600" />
+                                        <span className="text-[10px] text-gray-400">✓ Registered</span>
                                     </div>
                                 ))}
                             </div>
                             <button onClick={() => setFamilyAlerted(true)}
-                                className="w-full py-3.5 bg-gradient-to-r from-amber-600 to-amber-500 rounded-xl text-sm font-semibold shadow-lg shadow-amber-600/20 hover:from-amber-500 hover:to-amber-400 transition-all">
-                                📤 Send Safety Alert to All
+                                className="w-full py-2.5 bg-[#1a237e] text-white rounded-lg text-sm font-bold hover:bg-[#283593] transition-colors">
+                                📩 Send Safety Alert to All
                             </button>
                         </>
                     ) : (
-                        <div className="text-center space-y-4 pt-8">
-                            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-                                <Bell className="w-10 h-10 text-emerald-400" />
+                        <div className="text-center space-y-4">
+                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-100 border border-green-300">
+                                <Shield className="w-7 h-7 text-green-600" />
                             </div>
-                            <h2 className="text-lg font-bold text-emerald-300">Family Alerted ✓</h2>
-                            <p className="text-sm text-slate-400">SMS sent to 3 contacts with your safety status and GPS location.</p>
+                            <h2 className="text-lg font-bold text-green-800">Family Alerted ✓</h2>
+                            <p className="text-sm text-gray-600">Safety status and GPS coordinates sent to 3 contacts.</p>
                             <button onClick={() => { setFamilyAlerted(false); setView("home"); }}
-                                className="w-full py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-700 transition-colors">
+                                className="w-full py-2.5 bg-[#1a237e] text-white rounded-lg text-sm font-bold hover:bg-[#283593] transition-colors">
                                 Back to Dashboard
                             </button>
                         </div>
@@ -282,102 +283,33 @@ export default function CitizenDashboard({ onLogout }: { onLogout: () => void })
     // ─── STATE ANALYSIS VIEW ───
     if(view === "state-analysis") {
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-100">
-                <Header title="State & District Analysis" showBack />
-                <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
-                    {!selectedState ? (
-                        <>
-                            {/* Top danger strip */}
-                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-                                <p className="text-xs text-red-400 font-semibold mb-2">🔴 Top 5 High-Risk Districts Nationwide</p>
-                                <div className="space-y-1.5">
-                                    {highRiskDistricts.map((d, i) => (
-                                        <button key={i} onClick={() => { setSelectedDistrict({ ...d }); setView("district-detail"); }}
-                                            className="w-full flex items-center justify-between bg-slate-900/60 rounded-lg px-3 py-2 text-left hover:bg-slate-800/60 transition-colors">
-                                            <span className="text-xs text-slate-300">{i + 1}. {d.name}, <span className="text-slate-500">{d.stateName}</span></span>
-                                            <span className="text-[10px] font-mono text-red-400 font-bold">{d.riskScore}</span>
-                                        </button>
-                                    ))}
+            <div className="min-h-screen bg-[#f5f5f0]">
+                <GovHeader title="State-wise Analysis" showBack />
+                <div className="max-w-lg mx-auto px-4 py-5 space-y-3">
+                    <div className="bg-[#fff3cd] border border-[#ffc107] rounded px-3 py-2 text-xs text-[#856404]">
+                        <strong>Note:</strong> Risk levels based on real-time Open-Meteo weather data and AI analysis.
+                    </div>
+                    {STATES_DATA.map((st) => {
+                        const summary = getStateRiskSummary(st);
+                        return (
+                            <button key={st.name} onClick={() => { setSelectedState(st); }}
+                                className="w-full bg-white border border-gray-200 rounded-lg p-4 text-left hover:border-[#1a237e] transition-colors">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-gray-800">{st.name}</h3>
+                                        <p className="text-xs text-gray-400 mt-0.5">{st.districts.length} districts monitored</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-right text-[10px]">
+                                            {summary.highCount > 0 && <span className="block text-red-600 font-bold">{summary.highCount} High Risk</span>}
+                                            {summary.moderateCount > 0 && <span className="block text-yellow-600">{summary.moderateCount} Moderate</span>}
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* All States */}
-                            <h3 className="text-xs font-bold uppercase text-slate-500 flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Select State</h3>
-                            <div className="space-y-2">
-                                {STATES_DATA.map(state => {
-                                    const summary = getStateRiskSummary(state.name)!;
-                                    return (
-                                        <button key={state.code} onClick={() => setSelectedState(state)}
-                                            className="w-full bg-slate-900/60 border border-slate-800/50 rounded-xl p-4 text-left hover:border-blue-500/30 transition-colors">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h3 className="text-sm font-bold text-slate-200">{state.name}</h3>
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${summary.avgRisk > 7 ? "bg-red-500/20 text-red-400" : summary.avgRisk > 4 ? "bg-amber-500/20 text-amber-400" : "bg-green-500/20 text-green-400"}`}>
-                                                    Avg: {summary.avgRisk}
-                                                </span>
-                                            </div>
-                                            <div className="flex gap-3 text-[10px]">
-                                                <span className="text-red-400">🔴 {summary.high} High</span>
-                                                <span className="text-amber-400">🟡 {summary.moderate} Moderate</span>
-                                                <span className="text-green-400">🟢 {summary.low} Low</span>
-                                                <span className="text-slate-500 ml-auto">{state.districts.length} districts</span>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            {/* State Detail */}
-                            <button onClick={() => setSelectedState(null)} className="text-xs text-blue-400 hover:underline flex items-center gap-1">
-                                <ArrowLeft className="w-3 h-3" /> All States
                             </button>
-                            <div className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-4">
-                                <h2 className="text-lg font-bold text-white mb-1">{selectedState.name}</h2>
-                                {(() => {
-                                    const s = getStateRiskSummary(selectedState.name)!;
-                                    return (
-                                        <div className="grid grid-cols-3 gap-2 mt-3">
-                                            <div className="bg-slate-800/50 rounded-lg p-2.5 text-center">
-                                                <div className="text-[10px] text-slate-500">Population</div>
-                                                <div className="text-sm font-mono font-bold text-slate-200">{(s.totalPop / 1e6).toFixed(1)}M</div>
-                                            </div>
-                                            <div className="bg-slate-800/50 rounded-lg p-2.5 text-center">
-                                                <div className="text-[10px] text-slate-500">Avg Risk</div>
-                                                <div className={`text-sm font-mono font-bold ${s.avgRisk > 7 ? "text-red-400" : s.avgRisk > 4 ? "text-amber-400" : "text-green-400"}`}>{s.avgRisk}</div>
-                                            </div>
-                                            <div className="bg-slate-800/50 rounded-lg p-2.5 text-center">
-                                                <div className="text-[10px] text-slate-500">Shelters</div>
-                                                <div className="text-sm font-mono font-bold text-blue-300">{s.totalShelters}</div>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-
-                            <h3 className="text-xs font-bold uppercase text-slate-500 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> Districts</h3>
-                            <div className="space-y-2">
-                                {selectedState.districts.sort((a, b) => b.riskScore - a.riskScore).map((d, i) => (
-                                    <button key={i} onClick={() => { setSelectedDistrict({ ...d, stateName: selectedState.name }); setView("district-detail"); }}
-                                        className="w-full bg-slate-900/60 border border-slate-800/50 rounded-xl p-4 text-left hover:border-blue-500/30 transition-colors">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h4 className="text-sm font-semibold text-slate-200">{d.name}</h4>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold bg-${riskColor(d.riskLevel)}-500/20 text-${riskColor(d.riskLevel)}-400`}
-                                                style={{ color: d.riskLevel === "HIGH" ? "#f87171" : d.riskLevel === "MODERATE" ? "#fbbf24" : "#4ade80", backgroundColor: d.riskLevel === "HIGH" ? "rgba(248,113,113,0.15)" : d.riskLevel === "MODERATE" ? "rgba(251,191,36,0.15)" : "rgba(74,222,128,0.15)" }}>
-                                                {d.riskLevel} ({d.riskScore})
-                                            </span>
-                                        </div>
-                                        <div className="flex gap-3 text-[10px] text-slate-500">
-                                            <span>🌧️ {d.rainfall}mm</span>
-                                            <span>🌊 {d.waterLevel}m</span>
-                                            <span>👥 {(d.population / 1e6).toFixed(1)}M</span>
-                                            <span>🏠 {d.shelters} shelters</span>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </>
-                    )}
+                        );
+                    })}
                 </div>
             </div>
         );
@@ -385,87 +317,37 @@ export default function CitizenDashboard({ onLogout }: { onLogout: () => void })
 
     // ─── DISTRICT DETAIL VIEW ───
     if(view === "district-detail" && selectedDistrict) {
-        const d = selectedDistrict;
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-100">
-                <Header title={d.name} showBack />
+            <div className="min-h-screen bg-[#f5f5f0]">
+                <GovHeader title={selectedDistrict.name} showBack />
                 <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
-                    <button onClick={() => setView("state-analysis")} className="text-xs text-blue-400 hover:underline flex items-center gap-1">
-                        <ArrowLeft className="w-3 h-3" /> Back to States
-                    </button>
-
-                    {/* Risk Banner */}
-                    <div className={`rounded-2xl border p-5 ${d.riskLevel === "HIGH" ? "bg-red-500/10 border-red-500/20" : d.riskLevel === "MODERATE" ? "bg-amber-500/10 border-amber-500/20" : "bg-green-500/10 border-green-500/20"}`}>
-                        <div className="flex items-center justify-between mb-3">
-                            <h2 className="text-xl font-bold text-white">{d.name}</h2>
-                            <span className="text-sm font-mono font-bold px-3 py-1 rounded-lg"
-                                style={{ color: d.riskLevel === "HIGH" ? "#f87171" : d.riskLevel === "MODERATE" ? "#fbbf24" : "#4ade80", backgroundColor: d.riskLevel === "HIGH" ? "rgba(248,113,113,0.2)" : d.riskLevel === "MODERATE" ? "rgba(251,191,36,0.2)" : "rgba(74,222,128,0.2)" }}>
-                                {d.riskLevel}
-                            </span>
-                        </div>
-                        {d.stateName && <p className="text-xs text-slate-400 -mt-2 mb-3">{d.stateName}</p>}
-                        <div className="w-full bg-slate-800 rounded-full h-3 mb-2">
-                            <div className="h-3 rounded-full transition-all" style={{ width: `${d.riskScore * 10}%`, background: d.riskLevel === "HIGH" ? "#ef4444" : d.riskLevel === "MODERATE" ? "#f59e0b" : "#22c55e" }} />
-                        </div>
-                        <p className="text-xs text-slate-500 text-right">Risk Score: {d.riskScore}/10</p>
+                    <div className={`border rounded-lg p-4 ${selectedDistrict.riskLevel === "HIGH" ? "bg-red-50 border-red-200" : selectedDistrict.riskLevel === "MODERATE" ? "bg-yellow-50 border-yellow-200" : "bg-green-50 border-green-200"}`}>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded border ${severityBadge(selectedDistrict.riskLevel)}`}>{selectedDistrict.riskLevel} RISK</span>
+                        <h2 className="text-lg font-bold text-gray-800 mt-2">{selectedDistrict.name}</h2>
+                        <p className="text-xs text-gray-500">{selectedDistrict.stateName}</p>
                     </div>
 
-                    {/* Metrics Grid */}
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { label: "Rainfall", value: `${d.rainfall} mm`, icon: "🌧️", sub: "Last 24 hours" },
-                            { label: "Water Level", value: `${d.waterLevel} m`, icon: "🌊", sub: "Above normal" },
-                            { label: "Population", value: `${(d.population / 1e6).toFixed(2)}M`, icon: "👥", sub: "At risk" },
-                            { label: "Shelters", value: `${d.shelters}`, icon: "🏠", sub: "Operational" },
-                        ].map((m, i) => (
-                            <div key={i} className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-3.5">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-lg">{m.icon}</span>
-                                    <span className="text-[10px] uppercase text-slate-500 font-semibold">{m.label}</span>
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">Current Conditions</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { label: "Rainfall (24h)", value: `${liveRisk?.weather?.rainfall_24h || selectedDistrict.rainfall}mm`, icon: "🌧️" },
+                                { label: "Temperature", value: `${liveRisk?.weather?.temperature || 28}°C`, icon: "🌡️" },
+                                { label: "Soil Moisture", value: `${((liveRisk?.weather?.soil_moisture || 0.3) * 100).toFixed(0)}%`, icon: "🏔️" },
+                                { label: "River Discharge", value: `${liveRisk?.discharge?.current_discharge?.toFixed(1) || 0} m³/s`, icon: "🏞️" },
+                            ].map((m, i) => (
+                                <div key={i} className="bg-gray-50 border border-gray-100 rounded p-3">
+                                    <p className="text-[10px] text-gray-400">{m.icon} {m.label}</p>
+                                    <p className="text-sm font-bold text-gray-800 mt-0.5">{m.value}</p>
                                 </div>
-                                <p className="text-lg font-mono font-bold text-slate-200">{m.value}</p>
-                                <p className="text-[10px] text-slate-600">{m.sub}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Quick Actions */}
-                    {d.riskLevel === "HIGH" && (
-                        <button onClick={() => setView("evacuate")}
-                            className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-500 rounded-xl text-sm font-bold shadow-lg shadow-red-600/20 flex items-center justify-center gap-2">
-                            <Navigation className="w-4 h-4" /> Evacuate from {d.name} <ChevronRight className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
-    // ─── MAP VIEW ───
-    if(view === "map") {
-        return (
-            <div className="min-h-screen bg-slate-950 text-slate-100">
-                <Header title="Flood Risk Map" showBack />
-                <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
-                    <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl overflow-hidden">
-                        <div className="bg-gradient-to-br from-slate-800 to-slate-900 aspect-[4/3] flex items-center justify-center relative">
-                            <div className="text-center space-y-3">
-                                <MapPin className="w-12 h-12 text-blue-400 mx-auto animate-bounce" />
-                                <p className="text-sm text-slate-400">Interactive map rendered on NDRF Dashboard</p>
-                                <p className="text-xs text-slate-600">For citizens, use the State & District Analysis for detailed insights.</p>
-                            </div>
-                            {/* Mini risk overlay */}
-                            <div className="absolute top-3 right-3 bg-slate-800/90 rounded-lg p-2 space-y-1">
-                                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500"></span><span className="text-[9px] text-slate-400">High Risk</span></div>
-                                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"></span><span className="text-[9px] text-slate-400">Moderate</span></div>
-                                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500"></span><span className="text-[9px] text-slate-400">Low Risk</span></div>
-                            </div>
+                            ))}
                         </div>
                     </div>
-                    <button onClick={() => setView("state-analysis")}
-                        className="w-full py-3 bg-blue-600/20 border border-blue-500/20 rounded-xl text-sm font-semibold text-blue-300 flex items-center justify-center gap-2 hover:bg-blue-600/30 transition-colors">
-                        <BarChart3 className="w-4 h-4" /> Open State & District Analysis <ChevronRight className="w-4 h-4" />
-                    </button>
+
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Recommendation</h3>
+                        <p className="text-sm text-gray-700">{liveRisk?.recommendation || "No immediate flood risk. Continue routine monitoring."}</p>
+                    </div>
                 </div>
             </div>
         );
@@ -473,133 +355,113 @@ export default function CitizenDashboard({ onLogout }: { onLogout: () => void })
 
     // ─── HOME VIEW ───
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100">
-            <Header />
-            <div className="max-w-lg mx-auto px-4 py-5 space-y-5">
-                {/* Risk Status Card — LIVE DATA */}
+        <div className="min-h-screen bg-[#f5f5f0]">
+            <GovHeader />
+
+            <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
+
+                {/* Risk Status Card */}
                 {loadingRisk ? (
-                    <div className="bg-slate-900/60 rounded-2xl border border-slate-700/30 p-5 flex items-center justify-center gap-3">
-                        <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
-                        <span className="text-sm text-slate-400">Analyzing live weather data...</span>
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 flex items-center justify-center gap-2">
+                        <Loader2 className="w-5 h-5 text-[#1a237e] animate-spin" />
+                        <span className="text-sm text-gray-500">Fetching live flood risk data...</span>
                     </div>
                 ) : (
-                    <div className={`bg-gradient-to-br rounded-2xl border p-5 ${(liveRisk?.riskLevel === 'HIGH' || liveRisk?.riskLevel === 'SEVERE') ? 'from-red-500/15 to-red-900/10 border-red-500/20' :
-                            liveRisk?.riskLevel === 'MODERATE' ? 'from-amber-500/15 to-amber-900/10 border-amber-500/20' :
-                                'from-green-500/15 to-green-900/10 border-green-500/20'
-                        }`}>
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="relative">
-                                <span className={`absolute inline-flex h-full w-full rounded-full opacity-40 animate-ping ${(liveRisk?.riskLevel === 'HIGH' || liveRisk?.riskLevel === 'SEVERE') ? 'bg-red-500' :
-                                        liveRisk?.riskLevel === 'MODERATE' ? 'bg-amber-500' : 'bg-green-500'
-                                    }`}></span>
-                                <span className={`relative inline-flex w-4 h-4 rounded-full ${(liveRisk?.riskLevel === 'HIGH' || liveRisk?.riskLevel === 'SEVERE') ? 'bg-red-500' :
-                                        liveRisk?.riskLevel === 'MODERATE' ? 'bg-amber-500' : 'bg-green-500'
-                                    }`}></span>
-                            </div>
-                            <div>
-                                <h2 className={`text-lg font-bold ${(liveRisk?.riskLevel === 'HIGH' || liveRisk?.riskLevel === 'SEVERE') ? 'text-red-300' :
-                                        liveRisk?.riskLevel === 'MODERATE' ? 'text-amber-300' : 'text-green-300'
-                                    }`}>
-                                    {liveRisk?.riskLevel === 'SEVERE' ? '🚨 SEVERE RISK' :
-                                        liveRisk?.riskLevel === 'HIGH' ? '🚨 HIGH RISK ZONE' :
-                                            liveRisk?.riskLevel === 'MODERATE' ? '⚠️ MODERATE RISK' : '✅ LOW RISK'}
-                                </h2>
-                                <p className="text-xs text-slate-400">
-                                    Live data • {liveRisk?.weather?.source || 'Open-Meteo'} • {liveRisk?.model === 'trained' ? 'ML Model' : 'AI Analysis'}
-                                </p>
-                            </div>
+                    <div className={`border rounded-lg p-5 ${liveRisk?.riskLevel === "HIGH" || liveRisk?.riskLevel === "SEVERE" ? "bg-red-50 border-red-300" : liveRisk?.riskLevel === "MODERATE" ? "bg-yellow-50 border-yellow-300" : "bg-green-50 border-green-300"}`}>
+                        <div className="flex items-center justify-between mb-2">
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded border ${severityBadge(liveRisk?.riskLevel || "LOW")}`}>
+                                {liveRisk?.riskLevel || "LOW"} RISK
+                            </span>
+                            <span className="text-[10px] text-gray-500">📡 Live · Open-Meteo</span>
                         </div>
-                        <p className="text-sm text-slate-300 leading-relaxed">
-                            Flood probability <span className="font-bold" style={{ color: (liveRisk?.riskLevel === 'HIGH' || liveRisk?.riskLevel === 'SEVERE') ? '#f87171' : liveRisk?.riskLevel === 'MODERATE' ? '#fbbf24' : '#4ade80' }}>
-                                {((liveRisk?.probability || 0) * 100).toFixed(0)}%
-                            </span> in your area.
-                            {liveRisk?.weather && (
-                                <> Rain: {liveRisk.weather.rainfall_24h}mm/24h · Temp: {liveRisk.weather.temperature}°C</>
-                            )}
-                        </p>
-                        {liveRisk?.recommendation && (
-                            <p className="text-xs text-slate-400 mt-2 italic">💡 {liveRisk.recommendation}</p>
+                        <h2 className={`text-lg font-bold ${liveRisk?.riskLevel === "HIGH" || liveRisk?.riskLevel === "SEVERE" ? "text-red-800" : liveRisk?.riskLevel === "MODERATE" ? "text-yellow-800" : "text-green-800"}`}>
+                            {liveRisk?.riskLevel === "HIGH" || liveRisk?.riskLevel === "SEVERE" ? "🚨 High Risk Zone" : liveRisk?.riskLevel === "MODERATE" ? "⚠️ Elevated Risk" : "✅ Normal Conditions"}
+                        </h2>
+                        <p className="text-sm text-gray-600 mt-1">Flood probability: <strong>{((liveRisk?.probability || 0) * 100).toFixed(0)}%</strong> · Score: {liveRisk?.riskScore || 0}/10</p>
+
+                        {liveRisk?.weather && (
+                            <div className="grid grid-cols-3 gap-2 mt-3">
+                                <div className="bg-white/80 border border-gray-200 rounded p-2 text-center">
+                                    <p className="text-[9px] text-gray-400">Rain 24h</p>
+                                    <p className="text-sm font-bold text-gray-800">{liveRisk.weather.rainfall_24h}mm</p>
+                                </div>
+                                <div className="bg-white/80 border border-gray-200 rounded p-2 text-center">
+                                    <p className="text-[9px] text-gray-400">Temp</p>
+                                    <p className="text-sm font-bold text-gray-800">{liveRisk.weather.temperature}°C</p>
+                                </div>
+                                <div className="bg-white/80 border border-gray-200 rounded p-2 text-center">
+                                    <p className="text-[9px] text-gray-400">Soil Moist</p>
+                                    <p className="text-sm font-bold text-gray-800">{((liveRisk.weather.soil_moisture || 0) * 100).toFixed(0)}%</p>
+                                </div>
+                            </div>
                         )}
                     </div>
                 )}
 
                 {/* Quick Actions */}
-                <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => setView("evacuate")} className="bg-blue-600/20 border border-blue-500/20 rounded-xl p-4 text-center hover:bg-blue-600/30 transition-colors group">
-                        <Navigation className="w-6 h-6 text-blue-400 mx-auto mb-2 group-hover:animate-bounce" />
-                        <span className="text-sm font-semibold text-blue-300">Evacuate Now</span>
-                        <p className="text-[10px] text-slate-500 mt-1">Nearest safe route</p>
-                    </button>
-                    <button onClick={() => setView("shelters")} className="bg-emerald-600/20 border border-emerald-500/20 rounded-xl p-4 text-center hover:bg-emerald-600/30 transition-colors group">
-                        <MapPin className="w-6 h-6 text-emerald-400 mx-auto mb-2 group-hover:animate-bounce" />
-                        <span className="text-sm font-semibold text-emerald-300">Find Shelter</span>
-                        <p className="text-[10px] text-slate-500 mt-1">4 shelters nearby</p>
-                    </button>
-                    <button onClick={() => setView("sos")} className="bg-purple-600/20 border border-purple-500/20 rounded-xl p-4 text-center hover:bg-purple-600/30 transition-colors group">
-                        <Phone className="w-6 h-6 text-purple-400 mx-auto mb-2 group-hover:animate-bounce" />
-                        <span className="text-sm font-semibold text-purple-300">SOS Call</span>
-                        <p className="text-[10px] text-slate-500 mt-1">NDRF Helpline</p>
-                    </button>
-                    <button onClick={() => setView("alert-family")} className="bg-amber-600/20 border border-amber-500/20 rounded-xl p-4 text-center hover:bg-amber-600/30 transition-colors group">
-                        <Bell className="w-6 h-6 text-amber-400 mx-auto mb-2 group-hover:animate-bounce" />
-                        <span className="text-sm font-semibold text-amber-300">Alert Family</span>
-                        <p className="text-[10px] text-slate-500 mt-1">Share your status</p>
-                    </button>
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">Quick Actions</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                        {[
+                            { icon: <Navigation className="w-4 h-4" />, label: "Evacuation Route", view: "evacuate" as View, color: "#1a237e" },
+                            { icon: <MapPin className="w-4 h-4" />, label: "Nearby Shelters", view: "shelters" as View, color: "#1a237e" },
+                            { icon: <Siren className="w-4 h-4" />, label: "Send SOS", view: "sos" as View, color: "#b71c1c" },
+                            { icon: <Bell className="w-4 h-4" />, label: "Alert Family", view: "alert-family" as View, color: "#1a237e" },
+                        ].map((item, i) => (
+                            <button key={i} onClick={() => setView(item.view)}
+                                className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-left hover:border-[#1a237e] transition-all group">
+                                <div className="w-8 h-8 rounded flex items-center justify-center text-white" style={{ backgroundColor: item.color }}>
+                                    {item.icon}
+                                </div>
+                                <span className="text-xs font-semibold text-gray-700 group-hover:text-[#1a237e]">{item.label}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                {/* State Analysis Button */}
-                <button onClick={() => setView("state-analysis")}
-                    className="w-full bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/20 rounded-xl p-4 flex items-center gap-4 hover:from-indigo-600/30 hover:to-purple-600/30 transition-colors">
-                    <BarChart3 className="w-8 h-8 text-indigo-400" />
-                    <div className="text-left flex-1">
-                        <span className="text-sm font-bold text-indigo-300">State & District Analysis</span>
-                        <p className="text-[10px] text-slate-500">10 states · 40+ districts · Live risk data</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-slate-600" />
-                </button>
-
-                {/* Alert History */}
-                <div>
+                {/* Alerts */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-1.5">
-                            <AlertTriangle className="w-4 h-4" /> Recent Alerts
-                        </h3>
+                        <h3 className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Active Alerts</h3>
+                        <span className="text-[10px] text-gray-400">Auto-refreshed</span>
                     </div>
-                    <div className="space-y-2.5">
-                        {alertItems.map((alert, i) => (
-                            <div key={i} className={`bg-slate-900/60 rounded-xl border p-4 ${alert.color === "red" ? "border-red-500/20" : alert.color === "amber" ? "border-amber-500/20" : "border-green-500/20"}`}>
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${alert.color === "red" ? "bg-red-500/20 text-red-400" : alert.color === "amber" ? "bg-amber-500/20 text-amber-400" : "bg-green-500/20 text-green-400"}`}>{alert.severity}</span>
-                                    <span className="text-[10px] text-slate-600">{alert.time}</span>
+                    <div className="space-y-2">
+                        {alertItems.map((a, i) => (
+                            <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 border border-gray-100 rounded">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${severityBadge(a.severity)}`}>{a.severity}</span>
+                                <div className="flex-1">
+                                    <p className="text-xs text-gray-700">{a.msg}</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5">{a.time}</p>
                                 </div>
-                                <p className="text-xs text-slate-300 leading-relaxed">{alert.msg}</p>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Mesh Network Status */}
-                <div className="bg-slate-900/50 rounded-xl border border-slate-800/50 p-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Shield className="w-4 h-4 text-emerald-400" />
-                            <span className="text-xs font-semibold text-slate-400 uppercase">Mesh Network</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-emerald-400">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            <span className="text-[10px] font-mono">ONLINE • 7 peers</span>
-                        </div>
+                {/* State Analysis */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1"><BarChart3 className="w-3.5 h-3.5" /> State-wise Analysis</h3>
+                        <button onClick={() => setView("state-analysis")} className="text-[10px] font-bold text-[#1a237e] hover:underline">View All →</button>
+                    </div>
+                    <div className="space-y-1.5">
+                        {highRiskDistricts.map((d, i) => (
+                            <button key={i} onClick={() => { setSelectedDistrict(d as any); setView("district-detail"); }}
+                                className="w-full flex items-center justify-between bg-gray-50 border border-gray-100 rounded px-3 py-2 text-left hover:border-[#1a237e] transition-colors">
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-800">{d.name}</p>
+                                    <p className="text-[10px] text-gray-400">{(d as any).stateName}</p>
+                                </div>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${severityBadge(d.riskLevel)}`}>{d.riskLevel}</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                {/* Map CTA */}
-                <button onClick={() => setView("map")}
-                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl py-3.5 text-sm font-semibold shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 hover:from-blue-500 hover:to-cyan-400 transition-all">
-                    🗺️ Open Full Map View <ChevronRight className="w-4 h-4" />
-                </button>
+                {/* Footer */}
+                <div className="text-center text-[10px] text-gray-400 py-2">
+                    © 2024 FloodSense AI · National Disaster Response Force · Govt. of India
+                </div>
             </div>
         </div>
     );
