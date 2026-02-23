@@ -24,9 +24,14 @@ const suppressScript = `
   function shouldHide(args) {
     var msg = '';
     for (var i = 0; i < args.length; i++) {
-      if (typeof args[i] === 'string') msg += args[i];
+      var a = args[i];
+      if (typeof a === 'string') msg += a;
+      else if (a && typeof a === 'object') {
+        try { msg += JSON.stringify(a); } catch(e) {}
+      }
     }
-    return msg.indexOf('hydrat') > -1 || msg.indexOf('Hydrat') > -1 || msg.indexOf('HYDRAT') > -1 || msg.indexOf('bis_skin') > -1 || msg.indexOf('bis_register') > -1 || msg.indexOf('didn\\'t match') > -1;
+    var l = msg.toLowerCase();
+    return l.indexOf('hydrat') > -1 || l.indexOf('bis_skin') > -1 || l.indexOf('bis_register') > -1 || l.indexOf("didn't match") > -1 || l.indexOf('did not match') > -1 || l.indexOf('server rendered html') > -1 || l.indexOf('tree hydrated') > -1;
   }
   console.error = function() { if (!shouldHide(arguments)) oe.apply(console, arguments); };
   console.warn = function() { if (!shouldHide(arguments)) ow.apply(console, arguments); };
