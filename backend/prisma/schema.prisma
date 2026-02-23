@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CITIZEN
+  AUTHORITY
+}
+
+enum RiskLevel {
+  HIGH
+  MODERATE
+  LOW
+}
+
+model User {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  fullName  String?
+  state     String?
+  district  String?
+  role      Role     @default(CITIZEN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  alerts    Alert[]
+}
+
+model RiskZone {
+  id          String    @id @default(uuid())
+  zoneName    String
+  riskLevel   RiskLevel
+  centroidLat Float
+  centroidLng Float
+  geoJsonData Json?     // For storing detailed border polygons
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Telemetry {
+  id             String   @id @default(uuid())
+  sensorId       String
+  sensorType     String   // "RIVER_GAUGE", "SOIL_MOISTURE", "RAINFALL"
+  readingValue   Float
+  lat            Float
+  lng            Float
+  recordedAt     DateTime @default(now())
+}
+
+model Alert {
+  id          String   @id @default(uuid())
+  userId      String
+  message     String
+  severity    String
+  isDelivered Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id])
+}
