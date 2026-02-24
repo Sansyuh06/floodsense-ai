@@ -45,7 +45,7 @@ function LocationSelector({ onSelect }: { onSelect: (state: StateData, district:
           <div className="max-w-lg mx-auto flex items-center gap-3">
             <span className="text-2xl">🏛️</span>
             <div>
-              <h1 className="text-sm font-bold">FloodSense AI</h1>
+              <h1 className="text-sm font-bold">Floody</h1>
               <p className="text-[10px] text-blue-200">NDRF · Ministry of Home Affairs</p>
             </div>
           </div>
@@ -125,8 +125,8 @@ function LocationSelector({ onSelect }: { onSelect: (state: StateData, district:
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${district.riskLevel === "HIGH" ? "bg-red-100 text-red-600 border-red-200" :
-                        district.riskLevel === "MODERATE" ? "bg-yellow-100 text-yellow-600 border-yellow-200" :
-                          "bg-green-100 text-green-600 border-green-200"
+                      district.riskLevel === "MODERATE" ? "bg-yellow-100 text-yellow-600 border-yellow-200" :
+                        "bg-green-100 text-green-600 border-green-200"
                       }`}>
                       {district.riskLevel}
                     </span>

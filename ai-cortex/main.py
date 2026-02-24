@@ -1,5 +1,5 @@
 """
-FloodSense AI Cortex — Real-time flood risk prediction API.
+Floody AI Cortex — Real-time flood risk prediction API.
 Integrates Open-Meteo weather data with ML-based risk prediction.
 """
 from fastapi import FastAPI, HTTPException, Query
@@ -16,9 +16,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="FloodSense AI Cortex",
+    title="Floody AI Cortex",
     description="Real-time flood risk prediction using Open-Meteo weather data and ML models",
-    version="2.0.0",
+    version="2.1.0",
 )
 
 app.add_middleware(
@@ -48,7 +48,7 @@ class TranslationRequest(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "AI Cortex v2.0 — Real Data", "apis": ["Open-Meteo", "NDMA SACHET"]}
+    return {"status": "ok", "service": "Floody AI Cortex v2.1", "apis": ["Open-Meteo", "NDMA SACHET"], "features": ["retry", "cache", "fallback"]}
 
 
 # ─── Core Prediction Endpoint ────────────────────────
@@ -58,15 +58,16 @@ async def predict_flood_risk(req: PredictRequest):
     """
     Main prediction endpoint. Fetches real weather data,
     computes ML features, and returns risk assessment.
+    Gracefully degrades if network is unavailable (returns cached/default data).
     """
     try:
-        # Fetch real weather data from Open-Meteo
+        # Fetch real weather data from Open-Meteo (handles failures internally)
         weather = await get_current_weather(req.lat, req.lon)
-        logger.info(f"Weather for ({req.lat},{req.lon}): rain_24h={weather['rainfall_24h']}mm, soil={weather['soil_moisture']}")
+        logger.info(f"Weather for ({req.lat},{req.lon}): rain_24h={weather['rainfall_24h']}mm, soil={weather['soil_moisture']} [src={weather.get('source', 'unknown')}]")
 
-        # Fetch river discharge data
+        # Fetch river discharge data (handles failures internally)
         discharge = await get_river_discharge(req.lat, req.lon)
-        logger.info(f"Discharge for ({req.lat},{req.lon}): {discharge['current_discharge']} m³/s")
+        logger.info(f"Discharge for ({req.lat},{req.lon}): {discharge['current_discharge']} m³/s [src={discharge.get('source', 'unknown')}]")
 
         # ML prediction
         risk = predict_risk(weather, discharge)
@@ -74,8 +75,11 @@ async def predict_flood_risk(req: PredictRequest):
         # Generate alerts based on weather
         alerts = interpret_weather_risk(weather)
 
+        # Determine if data is degraded
+        is_degraded = weather.get("source", "").endswith("(cached)") or weather.get("source") == "unavailable"
+
         return {
-            "status": "success",
+            "status": "success" if not is_degraded else "degraded",
             "location": {
                 "lat": req.lat,
                 "lon": req.lon,
@@ -86,11 +90,23 @@ async def predict_flood_risk(req: PredictRequest):
             "weather": weather,
             "discharge": discharge,
             "alerts": alerts,
+            **({
+                "notice": "Data may be stale — network temporarily unavailable. Using cached/estimated values."
+            } if is_degraded else {}),
         }
 
     except Exception as e:
         logger.error(f"Prediction error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+        # Even on unexpected errors, return a safe response
+        return {
+            "status": "error",
+            "location": {"lat": req.lat, "lon": req.lon, "district": req.district_name, "state": req.state_name},
+            "risk": {"risk_level": "UNKNOWN", "risk_score": 0, "probability": 0, "category": "unknown"},
+            "weather": {"source": "unavailable", "rainfall_24h": 0, "soil_moisture": 0},
+            "discharge": {"source": "unavailable", "current_discharge": 0},
+            "alerts": [],
+            "error": str(e),
+        }
 
 
 # ─── Weather Endpoint ────────────────────────────────

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FloodSense AI - NDRF Command Station",
+  title: "Floody - NDRF Command Station",
   description: "AI-enabled Real-Time Flash Flood Forecasting Platform",
 };
 

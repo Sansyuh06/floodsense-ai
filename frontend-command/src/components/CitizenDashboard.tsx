@@ -3,11 +3,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { AlertTriangle, MapPin, Bell, Navigation, Globe, Phone, ChevronRight, Shield, LogOut, ArrowLeft, Volume2, Siren, BarChart3, Users, Loader2, Camera, WifiOff, Droplets, Heart, Send, Radio, TrendingUp, ExternalLink, Map, MessageCircle, Wifi } from "lucide-react";
 import { startMesh, sendMeshMessage, sendSOS, stopMesh, getNodeIdentity, type MeshMessage as MeshMsg, type MeshState as MState } from "@/lib/meshChat";
 import { STATES_DATA, getDamsByState, getVulnerableByState, type StateData, type DistrictData, type DamData } from "@/data/statesData";
-import { fetchRiskPrediction, type RiskPrediction, type FloodAlert } from "@/lib/api";
+import { fetchRiskPrediction, createSOS, sendFamilySOS, createReport, fetchCamps, fetchSafeRoute, type RiskPrediction, type FloodAlert, type RouteResult } from "@/lib/api";
 import { t, speak, LANG_MAP } from "@/lib/translations";
 import { getReports, addReport, getSimLocation, getNearestTowers, type CitizenReport, type SimLocation } from "@/lib/reportsStore";
 
-type View = "home" | "evacuate" | "shelters" | "sos" | "alert-family" | "vulnerability" | "dams" | "report" | "analytics" | "location-info" | "mesh";
+type View = "home" | "evacuate" | "shelters" | "camps" | "sos" | "alert-family" | "vulnerability" | "dams" | "report" | "analytics" | "location-info" | "mesh";
 
 interface Props { onLogout: () => void; userState: StateData; userDistrict: DistrictData; }
 
@@ -33,6 +33,13 @@ export default function CitizenDashboard({ onLogout, userState, userDistrict }: 
     const [meshState, setMeshState] = useState<MState | null>(null);
     const [meshInput, setMeshInput] = useState("");
     const meshBottomRef = useRef<HTMLDivElement>(null);
+    // Relief camps and route
+    const [reliefCamps, setReliefCamps] = useState<any[]>([]);
+    const [loadingCamps, setLoadingCamps] = useState(false);
+    const [safeRoute, setSafeRoute] = useState<RouteResult | null>(null);
+    const [sosLoading, setSosLoading] = useState(false);
+    const [sosResult, setSosResult] = useState<any>(null);
+    const [familySosLoading, setFamilySosLoading] = useState(false);
 
     useEffect(() => {
         const go = () => setIsOffline(!navigator.onLine);
@@ -46,8 +53,8 @@ export default function CitizenDashboard({ onLogout, userState, userDistrict }: 
             try {
                 const data = await fetchRiskPrediction(userDistrict.lat, userDistrict.lng, userDistrict.name, userState.name);
                 setLiveRisk(data); if(data.alerts) setLiveAlerts(data.alerts);
-                try { localStorage.setItem('floodsense_cached_risk', JSON.stringify(data)); } catch { }
-            } catch { try { const c = localStorage.getItem('floodsense_cached_risk'); if(c) setLiveRisk(JSON.parse(c)); } catch { } }
+                try { localStorage.setItem('floody_cached_risk', JSON.stringify(data)); } catch { }
+            } catch { try { const c = localStorage.getItem('floody_cached_risk'); if(c) setLiveRisk(JSON.parse(c)); } catch { } }
             finally { setLoadingRisk(false); }
         }
         load();
@@ -75,8 +82,23 @@ export default function CitizenDashboard({ onLogout, userState, userDistrict }: 
         speak(risk === "HIGH" || risk === "SEVERE" ? t(language, "danger_alert") : risk === "MODERATE" ? t(language, "moderate_risk") : t(language, "you_are_safe"), language);
     };
 
-    const handleSubmitReport = () => {
-        addReport({ type: reportType, description: reportDesc, photoUrl: reportPhoto || undefined, lat: simLoc?.lat || userDistrict.lat, lon: simLoc?.lon || userDistrict.lng, district: userDistrict.name, state: userState.name, severity: liveRisk?.riskLevel === "HIGH" || liveRisk?.riskLevel === "SEVERE" ? "HIGH" : "MODERATE", submittedBy: "+91 XXXXX" });
+    const handleSubmitReport = async () => {
+        const lat = simLoc?.lat || userDistrict.lat;
+        const lon = simLoc?.lon || userDistrict.lng;
+        const typeMap: Record<string, string> = {
+            waterlogging: 'WATERLOGGING', drainage_blocked: 'DRAIN_BLOCK',
+            road_flooded: 'FLOOD', embankment_breach: 'DAM_OVERFLOW', other: 'OTHER'
+        };
+        try {
+            await createReport({
+                reportType: typeMap[reportType] || 'OTHER',
+                description: reportDesc || `${reportType} reported from ${userDistrict.name}`,
+                lat, lon,
+                photoBase64: reportPhoto || undefined,
+                severity: liveRisk?.riskLevel === 'HIGH' || liveRisk?.riskLevel === 'SEVERE' ? 'HIGH' : 'MODERATE',
+            });
+        } catch { }
+        addReport({ type: reportType, description: reportDesc, photoUrl: reportPhoto || undefined, lat, lon: lon, district: userDistrict.name, state: userState.name, severity: liveRisk?.riskLevel === "HIGH" || liveRisk?.riskLevel === "SEVERE" ? "HIGH" : "MODERATE", submittedBy: "+91 XXXXX" });
         setReportSent(true);
     };
 
@@ -115,7 +137,7 @@ export default function CitizenDashboard({ onLogout, userState, userDistrict }: 
                     <div className="flex items-center gap-2">
                         {showBack && <button onClick={() => setView("home")} className="text-white/70 hover:text-white mr-1"><ArrowLeft className="w-5 h-5" /></button>}
                         <span className="text-2xl">🏛️</span>
-                        <div><h1 className="text-sm font-bold">{title || "FloodSense AI"}</h1><p className="text-[9px] text-blue-200">📍 {userDistrict.name}, {userState.name}</p></div>
+                        <div><h1 className="text-sm font-bold">{title || "Floody"}</h1><p className="text-[9px] text-blue-200">📍 {userDistrict.name}, {userState.name}</p></div>
                     </div>
                     <div className="flex items-center gap-2">
                         {isOffline && <span className="text-[9px] bg-red-500 px-1.5 py-0.5 rounded flex items-center gap-0.5"><WifiOff className="w-2.5 h-2.5" /> {t(language, "offline")}</span>}
@@ -181,19 +203,74 @@ export default function CitizenDashboard({ onLogout, userState, userDistrict }: 
         </div>
     );
 
-    // ─── SOS ───
+    // ─── SOS (calls real backend API) ───
     if(view === "sos") return (
         <div className="min-h-screen bg-[#f5f5f0]"><GovHeader title={t(language, "emergency_sos")} showBack />
-            <div className="max-w-lg mx-auto px-4 py-5 space-y-5">{!sosSent ? <div className="text-center space-y-5"><div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-100 border-2 border-red-300"><Siren className="w-12 h-12 text-red-600" /></div><h2 className="text-xl font-bold text-red-800">{t(language, "emergency_sos")}</h2><p className="text-sm text-gray-600 max-w-xs mx-auto">{t(language, "sends_sos_desc")} ({simLoc ? `${simLoc.lat.toFixed(4)}°N, ${simLoc.lon.toFixed(4)}°E · via ${simLoc.method}` : "detecting..."})</p><button onClick={() => { setSosSent(true); speak(t(language, "sos_sent"), language) }} className="w-full py-3 bg-red-600 text-white rounded-lg text-base font-bold hover:bg-red-700">{t(language, "send_sos_alert")}</button><div className="bg-white border border-gray-200 rounded-lg p-4 text-left space-y-2"><p className="text-xs text-gray-500 font-bold uppercase">{t(language, "helplines")}:</p>{[{ n: "NDRF", p: "011-24363260" }, { n: t(language, "disaster_mgmt"), p: "1078" }, { n: t(language, "emergency"), p: "112" }].map(h => <a key={h.p} href={`tel:${h.p}`} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-4 py-2.5 hover:border-[#1a237e]"><span className="text-sm text-gray-700">{h.n}</span><span className="text-sm font-mono text-[#1a237e] flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{h.p}</span></a>)}</div></div> : <div className="text-center space-y-4"><div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 border border-green-300"><Shield className="w-8 h-8 text-green-600" /></div><h2 className="text-lg font-bold text-green-800">{t(language, "sos_sent")}</h2><p className="text-sm text-gray-600">{t(language, "rescue_eta")}</p><div className="bg-white border border-gray-200 rounded-lg p-4 text-left text-xs text-gray-600 space-y-1"><p>{t(language, "alert_id")}: <span className="font-mono text-gray-800">SOS-{Math.floor(Math.random() * 9000 + 1000)}</span></p><p>{t(language, "location")}: <span className="font-mono text-gray-800">{simLoc ? `${simLoc.lat.toFixed(4)}°N, ${simLoc.lon.toFixed(4)}°E` : "28.6139°N, 77.2090°E"}</span></p><p>{t(language, "method")}: <span className="font-mono text-gray-800">{simLoc?.method === "gps" ? "GPS" : simLoc?.method === "cell_tower" ? "Cell Tower" : "Wi-Fi"}</span></p></div><button onClick={() => { setSosSent(false); setView("home") }} className="w-full py-2.5 bg-[#1a237e] text-white rounded-lg text-sm font-bold">{t(language, "back")}</button></div>}</div>
+            <div className="max-w-lg mx-auto px-4 py-5 space-y-5">{!sosSent ? <div className="text-center space-y-5"><div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-100 border-2 border-red-300 animate-pulse"><Siren className="w-12 h-12 text-red-600" /></div><h2 className="text-xl font-bold text-red-800">{t(language, "emergency_sos")}</h2><p className="text-sm text-gray-600 max-w-xs mx-auto">{t(language, "sends_sos_desc")} ({simLoc ? `${simLoc.lat.toFixed(4)}°N, ${simLoc.lon.toFixed(4)}°E · via ${simLoc.method}` : "detecting..."})</p><button disabled={sosLoading} onClick={async () => { setSosLoading(true); try { const res = await createSOS(simLoc?.lat || userDistrict.lat, simLoc?.lon || userDistrict.lng, 'FLOOD', `Emergency SOS from ${userDistrict.name}`); setSosResult(res); setSosSent(true); speak(t(language, "sos_sent"), language); } catch { setSosSent(true); speak(t(language, "sos_sent"), language); } setSosLoading(false); }} className="w-full py-3 bg-red-600 text-white rounded-lg text-base font-bold hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2">{sosLoading ? <><Loader2 className="w-5 h-5 animate-spin" /> Sending...</> : t(language, "send_sos_alert")}</button><div className="bg-white border border-gray-200 rounded-lg p-4 text-left space-y-2"><p className="text-xs text-gray-500 font-bold uppercase">{t(language, "helplines")}:</p>{[{ n: "NDRF", p: "011-24363260" }, { n: t(language, "disaster_mgmt"), p: "1078" }, { n: t(language, "emergency"), p: "112" }].map(h => <a key={h.p} href={`tel:${h.p}`} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded px-4 py-2.5 hover:border-[#1a237e]"><span className="text-sm text-gray-700">{h.n}</span><span className="text-sm font-mono text-[#1a237e] flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{h.p}</span></a>)}</div></div> : <div className="text-center space-y-4"><div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 border border-green-300"><Shield className="w-8 h-8 text-green-600" /></div><h2 className="text-lg font-bold text-green-800">{t(language, "sos_sent")}</h2><p className="text-sm text-gray-600">{t(language, "rescue_eta")}</p>{sosResult?.assignedTeam && <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800"><strong>Assigned NDRF Team:</strong> {sosResult.assignedTeam}</div>}<div className="bg-white border border-gray-200 rounded-lg p-4 text-left text-xs text-gray-600 space-y-1"><p>{t(language, "alert_id")}: <span className="font-mono text-gray-800">{sosResult?.sos?.id?.slice(0, 8) || `SOS-${Math.floor(Math.random() * 9000 + 1000)}`}</span></p><p>{t(language, "location")}: <span className="font-mono text-gray-800">{simLoc ? `${simLoc.lat.toFixed(4)}°N, ${simLoc.lon.toFixed(4)}°E` : "28.6139°N, 77.2090°E"}</span></p><p>{t(language, "method")}: <span className="font-mono text-gray-800">{simLoc?.method === "gps" ? "GPS" : simLoc?.method === "cell_tower" ? "Cell Tower" : "Wi-Fi"}</span></p></div><button onClick={() => { setSosSent(false); setSosResult(null); setView("home") }} className="w-full py-2.5 bg-[#1a237e] text-white rounded-lg text-sm font-bold">{t(language, "back")}</button></div>}</div>
         </div>
     );
 
-    // ─── ALERT FAMILY ───
+    // ─── ALERT FAMILY (calls real backend) ───
     if(view === "alert-family") return (
         <div className="min-h-screen bg-[#f5f5f0]"><GovHeader title={t(language, "alert_family")} showBack />
-            <div className="max-w-lg mx-auto px-4 py-5 space-y-4">{!familyAlerted ? <><p className="text-sm text-gray-600">{t(language, "send_safety_status")} {userDistrict.name}, {userState.name}.</p><div className="space-y-2">{[{ n: t(language, "mom"), p: "+91 98765 XXXXX" }, { n: t(language, "dad"), p: "+91 98764 XXXXX" }, { n: t(language, "brother"), p: "+91 87654 XXXXX" }].map((c, i) => <div key={i} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center"><Users className="w-4 h-4 text-[#1a237e]" /></div><div><p className="text-sm font-semibold text-gray-800">{c.n}</p><p className="text-[10px] text-gray-400">{c.p}</p></div></div><span className="text-[10px] text-gray-400">✓</span></div>)}</div><button onClick={() => { setFamilyAlerted(true); speak(`${t(language, "alert_family")} sent`, language) }} className="w-full py-2.5 bg-[#1a237e] text-white rounded-lg text-sm font-bold">{t(language, "send_safety_alert")}</button></> : <div className="text-center space-y-4"><Shield className="w-14 h-14 text-green-600 mx-auto" /><h2 className="text-lg font-bold text-green-800">{t(language, "family_alerted")}</h2><p className="text-sm text-gray-600">{t(language, "sms_gps_sent")} {userDistrict.name}.</p><button onClick={() => { setFamilyAlerted(false); setView("home") }} className="w-full py-2.5 bg-[#1a237e] text-white rounded-lg text-sm font-bold">{t(language, "back")}</button></div>}</div>
+            <div className="max-w-lg mx-auto px-4 py-5 space-y-4">{!familyAlerted ? <><p className="text-sm text-gray-600">{t(language, "send_safety_status")} {userDistrict.name}, {userState.name}.</p><div className="space-y-2">{[{ n: t(language, "mom"), p: "+91 98765 XXXXX" }, { n: t(language, "dad"), p: "+91 98764 XXXXX" }, { n: t(language, "brother"), p: "+91 87654 XXXXX" }].map((c, i) => <div key={i} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center"><Users className="w-4 h-4 text-[#1a237e]" /></div><div><p className="text-sm font-semibold text-gray-800">{c.n}</p><p className="text-[10px] text-gray-400">{c.p}</p></div></div><span className="text-[10px] text-gray-400">✓</span></div>)}</div><button disabled={familySosLoading} onClick={async () => { setFamilySosLoading(true); try { await sendFamilySOS(`Safety alert from ${userDistrict.name}`, simLoc?.lat || userDistrict.lat, simLoc?.lon || userDistrict.lng); } catch { } setFamilyAlerted(true); speak(`${t(language, "alert_family")} sent`, language); setFamilySosLoading(false); }} className="w-full py-2.5 bg-[#1a237e] text-white rounded-lg text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2">{familySosLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</> : t(language, "send_safety_alert")}</button></> : <div className="text-center space-y-4"><Shield className="w-14 h-14 text-green-600 mx-auto" /><h2 className="text-lg font-bold text-green-800">{t(language, "family_alerted")}</h2><p className="text-sm text-gray-600">{t(language, "sms_gps_sent")} {userDistrict.name}.</p><button onClick={() => { setFamilyAlerted(false); setView("home") }} className="w-full py-2.5 bg-[#1a237e] text-white rounded-lg text-sm font-bold">{t(language, "back")}</button></div>}</div>
         </div>
     );
+
+    // ─── RELIEF CAMPS (fetched from backend) ───
+    if(view === "camps") {
+        if(!loadingCamps && reliefCamps.length === 0) {
+            setLoadingCamps(true);
+            fetchCamps(simLoc?.lat || userDistrict.lat, simLoc?.lon || userDistrict.lng)
+                .then(data => { setReliefCamps(data.camps || []); setLoadingCamps(false); })
+                .catch(() => setLoadingCamps(false));
+        }
+        return (
+            <div className="min-h-screen bg-[#f5f5f0]"><GovHeader title="Relief Camps" showBack />
+                <div className="max-w-lg mx-auto px-4 py-5 space-y-3">
+                    {loadingCamps ? <div className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin text-[#1a237e] mx-auto" /><p className="text-xs text-gray-500 mt-2">Loading camps...</p></div> :
+                        reliefCamps.length === 0 ? <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center"><p className="text-sm text-yellow-800">No active relief camps found nearby. Showing default shelters.</p><button onClick={() => setView('shelters')} className="mt-2 text-xs text-[#1a237e] font-bold hover:underline">View Shelters →</button></div> :
+                            reliefCamps.map((camp: any, i: number) => (
+                                <div key={camp.id || i} className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="text-sm font-bold text-gray-800">{camp.name}</h3>
+                                        <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-green-50 text-green-700 border-green-200">
+                                            {camp.available_spots != null ? `${camp.available_spots} spots` : 'Open'}
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-4 text-xs text-gray-500">
+                                        {camp.distance_km != null && <span>📍 {camp.distance_km} km</span>}
+                                        <span>👥 {camp.currentOccupancy || 0}/{camp.capacity}</span>
+                                        {camp.facilities && <span>🏥 {camp.facilities}</span>}
+                                    </div>
+                                    <div className="flex gap-2 mt-3">
+                                        <button onClick={async () => {
+                                            const route = await fetchSafeRoute(simLoc?.lat || userDistrict.lat, simLoc?.lon || userDistrict.lng, camp.id);
+                                            setSafeRoute(route);
+                                            setNavTarget({ name: camp.name, lat: camp.lat, lon: camp.lon });
+                                            setView('evacuate');
+                                        }} className="flex-1 text-xs font-bold bg-[#1a237e] text-white py-2 rounded hover:bg-[#283593] flex items-center justify-center gap-1">
+                                            <Navigation className="w-3.5 h-3.5" /> Safe Route
+                                        </button>
+                                        <a href={getNavUrl(camp.lat, camp.lon)} target="_blank" rel="noopener noreferrer" className="text-xs font-bold border border-gray-200 text-gray-600 py-2 px-3 rounded hover:border-[#1a237e] flex items-center gap-1">
+                                            <ExternalLink className="w-3.5 h-3.5" /> Maps
+                                        </a>
+                                    </div>
+                                    {safeRoute && safeRoute.to.name === camp.name && (
+                                        <div className={`mt-2 p-2 rounded text-xs border ${safeRoute.risk_level === 'HIGH' ? 'bg-red-50 border-red-200 text-red-700' :
+                                            safeRoute.risk_level === 'MODERATE' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
+                                                'bg-green-50 border-green-200 text-green-700'
+                                            }`}>
+                                            <strong>Route:</strong> {safeRoute.distance_km} km · ETA {safeRoute.eta_minutes} min · Risk: {safeRoute.risk_level}
+                                            {safeRoute.warning && <p className="mt-1 text-red-600">⚠️ {safeRoute.warning}</p>}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                </div>
+            </div>
+        );
+    }
 
     // ─── VULNERABILITY (MAP + LOCAL ONLY) ───
     if(view === "vulnerability") return (
@@ -344,7 +421,7 @@ export default function CitizenDashboard({ onLogout, userState, userDistrict }: 
                 {simLoc && <button onClick={() => setView("location-info")} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between hover:border-[#1a237e]"><div className="flex items-center gap-2"><Radio className="w-4 h-4 text-[#1a237e]" /><div className="text-left"><p className="text-xs font-semibold text-gray-800">SIM GPS: {simLoc.lat.toFixed(3)}°N, {simLoc.lon.toFixed(3)}°E</p><p className="text-[10px] text-gray-400">via {simLoc.method === "gps" ? "GPS" : simLoc.method === "cell_tower" ? "Cell Tower" : "Wi-Fi"} · ±{simLoc.accuracy_m}m</p></div></div><ChevronRight className="w-4 h-4 text-gray-400" /></button>}
                 {/* Quick Actions */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4"><h3 className="text-xs font-bold text-gray-500 uppercase mb-3">{t(language, "quick_actions")}</h3>
-                    <div className="grid grid-cols-2 gap-2">{[{ i: <Navigation className="w-4 h-4" />, l: t(language, "evacuation_route"), v: "evacuate" as View, c: "#1a237e" }, { i: <MapPin className="w-4 h-4" />, l: t(language, "nearby_shelters"), v: "shelters" as View, c: "#1a237e" }, { i: <Siren className="w-4 h-4" />, l: t(language, "send_sos"), v: "sos" as View, c: "#b71c1c" }, { i: <Bell className="w-4 h-4" />, l: t(language, "alert_family"), v: "alert-family" as View, c: "#1a237e" }, { i: <MessageCircle className="w-4 h-4" />, l: t(language, "floodmesh_chat"), v: "mesh" as View, c: "#2e7d32" }, { i: <Camera className="w-4 h-4" />, l: t(language, "report_flood"), v: "report" as View, c: "#1a237e" }, { i: <TrendingUp className="w-4 h-4" />, l: t(language, "hydromet_analytics"), v: "analytics" as View, c: "#1a237e" }, { i: <Heart className="w-4 h-4" />, l: t(language, "vulnerable_areas"), v: "vulnerability" as View, c: "#b71c1c" }, { i: <Droplets className="w-4 h-4" />, l: t(language, "dam_monitoring"), v: "dams" as View, c: "#1a237e" }].map((it, i) => <button key={i} onClick={() => setView(it.v)} className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-left hover:border-[#1a237e] group"><div className="w-8 h-8 rounded flex items-center justify-center text-white" style={{ backgroundColor: it.c }}>{it.i}</div><span className="text-xs font-semibold text-gray-700 group-hover:text-[#1a237e]">{it.l}</span></button>)}</div>
+                    <div className="grid grid-cols-2 gap-2">{[{ i: <Navigation className="w-4 h-4" />, l: t(language, "evacuation_route"), v: "evacuate" as View, c: "#1a237e" }, { i: <MapPin className="w-4 h-4" />, l: t(language, "nearby_shelters"), v: "shelters" as View, c: "#1a237e" }, { i: <Shield className="w-4 h-4" />, l: "Relief Camps", v: "camps" as View, c: "#2e7d32" }, { i: <Siren className="w-4 h-4" />, l: t(language, "send_sos"), v: "sos" as View, c: "#b71c1c" }, { i: <Bell className="w-4 h-4" />, l: t(language, "alert_family"), v: "alert-family" as View, c: "#1a237e" }, { i: <MessageCircle className="w-4 h-4" />, l: t(language, "floodmesh_chat"), v: "mesh" as View, c: "#2e7d32" }, { i: <Camera className="w-4 h-4" />, l: t(language, "report_flood"), v: "report" as View, c: "#1a237e" }, { i: <TrendingUp className="w-4 h-4" />, l: t(language, "hydromet_analytics"), v: "analytics" as View, c: "#1a237e" }, { i: <Heart className="w-4 h-4" />, l: t(language, "vulnerable_areas"), v: "vulnerability" as View, c: "#b71c1c" }, { i: <Droplets className="w-4 h-4" />, l: t(language, "dam_monitoring"), v: "dams" as View, c: "#1a237e" }].map((it, i) => <button key={i} onClick={() => setView(it.v)} className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-left hover:border-[#1a237e] group"><div className="w-8 h-8 rounded flex items-center justify-center text-white" style={{ backgroundColor: it.c }}>{it.i}</div><span className="text-xs font-semibold text-gray-700 group-hover:text-[#1a237e]">{it.l}</span></button>)}</div>
                 </div>
                 {/* Dam alerts from YOUR state */}
                 {dangerDams.length > 0 && <div className="bg-red-50 border border-red-200 rounded-lg p-4"><h3 className="text-xs font-bold text-red-700 uppercase mb-2 flex items-center gap-1"><Droplets className="w-3.5 h-3.5" />{t(language, "dams_near")} {userState.name}</h3>{dangerDams.map((d, i) => <div key={i} className="flex items-center justify-between py-1.5 border-b border-red-100 last:border-0"><div><p className="text-xs font-semibold text-gray-800">{d.name}</p><p className="text-[10px] text-gray-500">{d.river}·{d.district}</p></div><span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${damC(d.status)}`}>{d.status} ({d.current_level_pct}%)</span></div>)}<button onClick={() => setView("dams")} className="mt-2 text-[10px] font-bold text-[#1a237e]">{t(language, "view_all")} →</button></div>}

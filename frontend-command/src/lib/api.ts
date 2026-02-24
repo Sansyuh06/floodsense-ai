@@ -1,5 +1,5 @@
 /**
- * FloodSense API Client — connects frontend to real backend endpoints.
+ * Floody API Client — connects frontend to real backend endpoints.
  * All data is from real APIs (Open-Meteo, NDMA) via the AI Cortex.
  */
 
@@ -236,4 +236,134 @@ export async function fetchBulkRisk(
     } catch {
         return [];
     }
+}
+
+// ─── Auth Helper ────────────────────────────────────
+function authHeaders() {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    };
+}
+
+// ─── SOS / Panic Button ────────────────────────────
+export async function createSOS(lat: number, lon: number, category?: string, message?: string) {
+    const resp = await fetch(`${API_BASE}/api/sos`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ lat, lon, category: category || 'FLOOD', message: message || 'EMERGENCY SOS' }),
+    });
+    return resp.json();
+}
+
+export async function fetchSOSAlerts(status?: string, team?: string) {
+    const params = new URLSearchParams();
+    if(status) params.set('status', status);
+    if(team) params.set('team', team);
+    const resp = await fetch(`${API_BASE}/api/sos?${params}`, { headers: authHeaders() });
+    return resp.json();
+}
+
+export async function updateSOSStatus(id: string, status: 'ACTIVE' | 'RESPONDING' | 'RESOLVED') {
+    const resp = await fetch(`${API_BASE}/api/sos/${id}`, {
+        method: 'PATCH', headers: authHeaders(),
+        body: JSON.stringify({ status }),
+    });
+    return resp.json();
+}
+
+// ─── Relief Camps ──────────────────────────────────
+export async function createCamp(data: { name: string; lat: number; lon: number; capacity?: number; facilities?: string; contactPhone?: string; address?: string }) {
+    const resp = await fetch(`${API_BASE}/api/camps`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+    return resp.json();
+}
+
+export async function fetchCamps(lat?: number, lon?: number) {
+    const params = new URLSearchParams();
+    if(lat !== undefined) params.set('lat', String(lat));
+    if(lon !== undefined) params.set('lon', String(lon));
+    const resp = await fetch(`${API_BASE}/api/camps?${params}`);
+    return resp.json();
+}
+
+export async function updateCamp(id: string, data: Record<string, any>) {
+    const resp = await fetch(`${API_BASE}/api/camps/${id}`, {
+        method: 'PATCH', headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+    return resp.json();
+}
+
+// ─── Reports with Photo Upload ─────────────────────
+export async function createReport(data: { reportType: string; description: string; lat: number; lon: number; photoBase64?: string; severity?: string }) {
+    const resp = await fetch(`${API_BASE}/api/reports`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+    return resp.json();
+}
+
+export async function fetchReports(opts?: { status?: string; type?: string; page?: number }) {
+    const params = new URLSearchParams();
+    if(opts?.status) params.set('status', opts.status);
+    if(opts?.type) params.set('type', opts.type);
+    if(opts?.page) params.set('page', String(opts.page));
+    const resp = await fetch(`${API_BASE}/api/reports?${params}`);
+    return resp.json();
+}
+
+export async function updateReport(id: string, data: { status?: string; assignedVolunteerId?: string }) {
+    const resp = await fetch(`${API_BASE}/api/reports/${id}`, {
+        method: 'PATCH', headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+    return resp.json();
+}
+
+// ─── Family ────────────────────────────────────────
+export async function fetchFamily(familyId: string) {
+    const resp = await fetch(`${API_BASE}/api/family/${familyId}`, { headers: authHeaders() });
+    return resp.json();
+}
+
+export async function addFamilyMember(data: { name: string; phone: string; relation?: string; specialNeeds?: string }) {
+    const resp = await fetch(`${API_BASE}/api/family/members`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+    return resp.json();
+}
+
+export async function sendFamilySOS(message?: string, lat?: number, lon?: number) {
+    const resp = await fetch(`${API_BASE}/api/family-sos`, {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ message: message || 'Family SOS Alert', lat, lon }),
+    });
+    return resp.json();
+}
+
+// ─── Safe Route ────────────────────────────────────
+export interface RouteResult {
+    from: { lat: number; lon: number };
+    to: { lat: number; lon: number; name: string };
+    distance_km: number;
+    eta_minutes: number;
+    risk_score: number;
+    risk_level: string;
+    flooded_segments_nearby: number;
+    coordinates: number[][];
+    warning: string | null;
+}
+
+export async function fetchSafeRoute(fromLat: number, fromLon: number, toCampId?: string): Promise<RouteResult | null> {
+    const params = new URLSearchParams({ fromLat: String(fromLat), fromLon: String(fromLon) });
+    if(toCampId) params.set('toCampId', toCampId);
+    try {
+        const resp = await fetch(`${API_BASE}/api/routes?${params}`);
+        const json = await resp.json();
+        return json.route || null;
+    } catch { return null; }
 }

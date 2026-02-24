@@ -1,4 +1,4 @@
-# 🌊 FloodSense-AI
+# 🌊 Floody
 
 **Real-Time Indian Flood Prediction & Alert System**
 

@@ -28,8 +28,8 @@ export interface SimLocation {
     timestamp: string;
 }
 
-const STORAGE_KEY = "floodsense_citizen_reports";
-const LOCATION_KEY = "floodsense_user_location";
+const STORAGE_KEY = "floody_citizen_reports";
+const LOCATION_KEY = "floody_user_location";
 
 // ─── Reports ───
 
@@ -195,7 +195,7 @@ function simulateCellTower(): SimLocation {
 }
 
 export function getNearestTowers(lat: number, lon: number): Array<{ id: string; lat: number; lon: number; signal: number; distance_km: number }> {
-    const towers = [];
+    const towers: Array<{ id: string; lat: number; lon: number; signal: number; distance_km: number }> = [];
     for(let i = 0; i < 3; i++) {
         const tLat = lat + (Math.random() - 0.5) * 0.03;
         const tLon = lon + (Math.random() - 0.5) * 0.03;

@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { io } from 'socket.io-client';
+import { useRealtime, type RealtimeEvent } from '@/lib/useRealtime';
+import { Bell } from 'lucide-react';
 import {
     AlertTriangle, Activity, Layers, Radio, Shield, LogOut, Loader2, RefreshCw,
     Droplets, Heart, Building, BarChart3, Play, Pause, RotateCcw, FileText, CheckCircle, Clock, Eye
@@ -36,7 +37,9 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
     const [zoneCount, setZoneCount] = useState(0);
     const [loadingBulk, setLoadingBulk] = useState(false);
     const [riskData, setRiskData] = useState<BulkRiskResult[]>([]);
-    const [activeTab, setActiveTab] = useState<'telemetry' | 'dams' | 'vulnerability' | 'simulation' | 'reports'>('telemetry');
+    const [activeTab, setActiveTab] = useState<'telemetry' | 'dams' | 'vulnerability' | 'simulation' | 'reports' | 'live'>('live');
+    // Real-time WebSocket connection
+    const { connected: wsConnected, events: liveEvents, sosCount, reportCount, clearEvents, latestSOS } = useRealtime(true);
     const [citizenReports, setCitizenReports] = useState<CitizenReport[]>([]);
     const [reportStats, setReportStats] = useState(getReportStats());
     // Flood simulation state
@@ -200,14 +203,7 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
         } catch { }
     }, [showRiskZones]);
 
-    useEffect(() => {
-        const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
-        socket.emit('subscribe_telemetry', 'ALL');
-        socket.on('risk_update', (data) => {
-            setAlerts(prev => [`[${new Date(data.timestamp).toLocaleTimeString()}] ${data.districtId} → ${data.riskLevel} (${data.riskScore})`, ...prev.slice(0, 49)]);
-        });
-        return () => { socket.disconnect(); };
-    }, []);
+    // Socket.IO connection is handled by useRealtime hook above
 
     // Flood simulation
     useEffect(() => {
@@ -254,7 +250,7 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                         <div className="flex items-center gap-2.5">
                             <span className="text-xl">🏛️</span>
                             <div>
-                                <h1 className="text-sm font-bold">FloodSense AI — Command</h1>
+                                <h1 className="text-sm font-bold">Floody — Command</h1>
                                 <p className="text-[9px] text-blue-200">NDRF Authority Dashboard</p>
                             </div>
                         </div>
@@ -268,6 +264,7 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                         <div className="flex items-center justify-between mb-2">
                             <h2 className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Shield className="w-3 h-3" /> System Status</h2>
                             <span className="flex items-center gap-1 text-green-600 text-[10px] font-bold"><span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" /></span>ACTIVE</span>
+                            <span className={`flex items-center gap-1 text-[9px] font-bold ml-2 ${wsConnected ? 'text-emerald-600' : 'text-red-400'}`}><span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-500' : 'bg-red-400'}`} />{wsConnected ? 'WS' : 'WS ✕'}</span>
                         </div>
                         <div className="grid grid-cols-4 gap-1.5 text-[11px]">
                             <div className="bg-white border border-gray-100 rounded p-1.5 text-center"><div className="text-gray-400 text-[9px]">Monitor</div><div className="font-bold text-[#1a237e]">{sensorCount || '...'}</div></div>
@@ -309,21 +306,75 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                 {/* Tabs */}
                 <div className="flex border-b border-gray-200 px-3">
                     {([
-                        { id: 'telemetry' as const, icon: <Radio className="w-3 h-3" />, label: 'Telem' },
-                        { id: 'dams' as const, icon: <Droplets className="w-3 h-3" />, label: 'Dams' },
-                        { id: 'vulnerability' as const, icon: <Heart className="w-3 h-3" />, label: 'Vuln' },
-                        { id: 'simulation' as const, icon: <BarChart3 className="w-3 h-3" />, label: 'Sim' },
-                        { id: 'reports' as const, icon: <FileText className="w-3 h-3" />, label: 'Rpts' },
+                        { id: 'live' as const, icon: <Bell className="w-3 h-3" />, label: 'Live', badge: sosCount + reportCount },
+                        { id: 'telemetry' as const, icon: <Radio className="w-3 h-3" />, label: 'Telem', badge: 0 },
+                        { id: 'dams' as const, icon: <Droplets className="w-3 h-3" />, label: 'Dams', badge: 0 },
+                        { id: 'vulnerability' as const, icon: <Heart className="w-3 h-3" />, label: 'Vuln', badge: 0 },
+                        { id: 'simulation' as const, icon: <BarChart3 className="w-3 h-3" />, label: 'Sim', badge: 0 },
+                        { id: 'reports' as const, icon: <FileText className="w-3 h-3" />, label: 'Rpts', badge: 0 },
                     ]).map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                            className={`flex-1 text-[10px] font-bold py-2 flex items-center justify-center gap-1 border-b-2 ${activeTab === tab.id ? 'border-[#1a237e] text-[#1a237e]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+                        <button key={tab.id} onClick={() => { setActiveTab(tab.id); if(tab.id === 'live') clearEvents(); }}
+                            className={`flex-1 text-[10px] font-bold py-2 flex items-center justify-center gap-1 border-b-2 relative ${activeTab === tab.id ? 'border-[#1a237e] text-[#1a237e]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
                             {tab.icon} {tab.label}
+                            {tab.badge > 0 && <span className="absolute -top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center animate-pulse">{tab.badge > 9 ? '9+' : tab.badge}</span>}
                         </button>
                     ))}
                 </div>
 
                 {/* Tab Content */}
                 <div className="flex-1 overflow-y-auto px-3 py-2">
+                    {activeTab === 'live' && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><Bell className="w-3 h-3" /> Live Citizen Feed</h3>
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${wsConnected ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>{wsConnected ? '● Connected' : '● Disconnected'}</span>
+                            </div>
+                            {liveEvents.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-40 text-gray-300">
+                                    <Bell className="w-8 h-8 mb-2 opacity-50" />
+                                    <p className="text-[10px] text-gray-400">Waiting for citizen alerts...</p>
+                                    <p className="text-[9px] text-gray-300 mt-1">SOS alerts and reports appear here in real-time</p>
+                                </div>
+                            ) : liveEvents.map((evt, i) => (
+                                <div key={i} className={`border rounded-lg p-2.5 text-[11px] space-y-1 ${evt.type === 'sos_alert' ? 'bg-red-50 border-red-200' :
+                                    evt.type === 'family_sos' ? 'bg-orange-50 border-orange-200' :
+                                        evt.type === 'new_report' ? 'bg-blue-50 border-blue-200' :
+                                            'bg-gray-50 border-gray-200'
+                                    }`}>
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-bold">
+                                            {evt.type === 'sos_alert' && '🚨 SOS ALERT'}
+                                            {evt.type === 'family_sos' && '👨‍👩‍👧 FAMILY SOS'}
+                                            {evt.type === 'new_report' && '📋 New Report'}
+                                            {evt.type === 'sos_update' && '✅ SOS Update'}
+                                        </span>
+                                        <span className="text-[9px] text-gray-400">{new Date(evt.timestamp).toLocaleTimeString()}</span>
+                                    </div>
+                                    {evt.type === 'sos_alert' && evt.data?.sos && (
+                                        <div className="space-y-0.5">
+                                            <p><span className="text-gray-500">From:</span> <span className="font-bold">{evt.data.sos.fullName || evt.data.sos.phone || 'Citizen'}</span></p>
+                                            <p><span className="text-gray-500">Location:</span> {Number(evt.data.sos.lat).toFixed(4)}, {Number(evt.data.sos.lon).toFixed(4)}</p>
+                                            <p><span className="text-gray-500">Category:</span> <span className="font-bold text-red-600">{evt.data.sos.category}</span></p>
+                                            {evt.data.sos.message && <p><span className="text-gray-500">Message:</span> {evt.data.sos.message}</p>}
+                                            <p><span className="text-gray-500">NDRF Team:</span> <span className="font-bold text-purple-700">{evt.data.assignedTeam}</span></p>
+                                        </div>
+                                    )}
+                                    {evt.type === 'new_report' && evt.data?.report && (
+                                        <div className="space-y-0.5">
+                                            <p><span className="text-gray-500">Type:</span> <span className="font-bold">{evt.data.report.reportType}</span></p>
+                                            <p><span className="text-gray-500">By:</span> {evt.data.report.fullName || 'Citizen'}</p>
+                                            <p><span className="text-gray-500">Location:</span> {Number(evt.data.report.lat).toFixed(4)}, {Number(evt.data.report.lon).toFixed(4)}</p>
+                                            <p className="text-gray-600 italic">{evt.data.report.description?.slice(0, 80)}{evt.data.report.description?.length > 80 ? '...' : ''}</p>
+                                            <p><span className="text-gray-500">Severity:</span> <span className={`font-bold ${evt.data.report.severity === 'SEVERE' ? 'text-red-600' : evt.data.report.severity === 'HIGH' ? 'text-orange-600' : 'text-yellow-600'}`}>{evt.data.report.severity}</span></p>
+                                        </div>
+                                    )}
+                                    {evt.type === 'family_sos' && (
+                                        <p><span className="text-gray-500">Family members notified:</span> <span className="font-bold">{evt.data?.members || 0}</span></p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     {activeTab === 'telemetry' && (
                         <div className="space-y-1">
                             {alerts.length === 0 ? (
@@ -458,9 +509,9 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                                     <div className="flex items-center justify-between">
                                         <span className="text-[10px] font-mono text-gray-500">{r.id}</span>
                                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${r.severity === 'SEVERE' ? 'bg-red-600 text-white border-red-600' :
-                                                r.severity === 'HIGH' ? 'bg-red-100 text-red-700 border-red-200' :
-                                                    r.severity === 'MODERATE' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                                                        'bg-green-100 text-green-700 border-green-200'
+                                            r.severity === 'HIGH' ? 'bg-red-100 text-red-700 border-red-200' :
+                                                r.severity === 'MODERATE' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                                    'bg-green-100 text-green-700 border-green-200'
                                             }`}>{r.severity}</span>
                                     </div>
                                     <p className="text-[11px] text-gray-700">{r.description.slice(0, 100)}{r.description.length > 100 ? '...' : ''}</p>
@@ -471,8 +522,8 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                                     <div className="flex items-center justify-between text-[9px]">
                                         <span className="text-gray-400">{r.submittedBy} · {new Date(r.submittedAt).toLocaleTimeString()}</span>
                                         <span className={`font-bold ${r.status === 'submitted' ? 'text-red-500' :
-                                                r.status === 'acknowledged' ? 'text-yellow-600' :
-                                                    r.status === 'investigating' ? 'text-blue-600' : 'text-green-600'
+                                            r.status === 'acknowledged' ? 'text-yellow-600' :
+                                                r.status === 'investigating' ? 'text-blue-600' : 'text-green-600'
                                             }`}>{r.status.toUpperCase()}</span>
                                     </div>
                                     {r.status !== 'resolved' && (
@@ -495,7 +546,7 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                             <LogOut className="w-3 h-3" /> Logout
                         </button>
                     )}
-                    <p className="text-[8px] text-gray-400 text-center">FloodSense AI v2.0 · NDRF Command · Govt. of India</p>
+                    <p className="text-[8px] text-gray-400 text-center">Floody v2.0 · NDRF Command · Govt. of India</p>
                 </div>
             </div>
 

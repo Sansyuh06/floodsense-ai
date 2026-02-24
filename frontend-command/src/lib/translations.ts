@@ -1,4 +1,4 @@
-// Multilingual translation system for FloodSense AI
+// Multilingual translation system for Floody
 // Supports 12 Indian languages with key UI strings
 
 export type LangCode = "en" | "hi" | "bn" | "te" | "ta" | "mr" | "gu" | "kn" | "ml" | "pa" | "as" | "or";
@@ -231,7 +231,7 @@ const translations: Record<LangCode, TranslationSet> = {
         back: "Back", refresh: "Refresh", loading: "Loading...",
         state_analysis: "State-wise Analysis", view_all: "View All",
         current_conditions: "Current Conditions", recommendation: "Recommendation",
-        copyright: "© 2024 FloodSense AI · NDRF · Govt. of India",
+        copyright: "© 2024 Floody · NDRF · Govt. of India",
     },
     hi: {
         citizen_portal: "नागरिक पोर्टल", authority_portal: "NDRF / प्राधिकरण पोर्टल",
@@ -300,7 +300,7 @@ const translations: Record<LangCode, TranslationSet> = {
         rain_24h: "वर्षा 24घं", temp: "तापमान", soil: "मिट्टी",
         live: "लाइव", cached: "कैश्ड", offline: "ऑफलाइन",
         dams_near: "निकट बांध", reports_label: "रिपोर्ट",
-        copyright: "© 2024 FloodSense AI · NDRF · भारत सरकार",
+        copyright: "© 2024 Floody · NDRF · भारत सरकार",
     },
     bn: {
         citizen_portal: "নাগরিক পোর্টাল", authority_portal: "NDRF / কর্তৃপক্ষ পোর্টাল",
@@ -367,7 +367,7 @@ const translations: Record<LangCode, TranslationSet> = {
         rain_24h: "বৃষ্টি ২৪ঘণ্টা", temp: "তাপমাত্রা", soil: "মাটি",
         live: "লাইভ", cached: "ক্যাশড", offline: "অফলাইন",
         dams_near: "কাছের বাঁধ", reports_label: "রিপোর্ট",
-        copyright: "© ২০২৪ FloodSense AI · NDRF · ভারত সরকার",
+        copyright: "© ২০২৪ Floody · NDRF · ভারত সরকার",
     },
     ta: {
         citizen_portal: "குடிமக்கள் போர்டல்", authority_portal: "NDRF / அதிகாரி போர்டல்",
@@ -433,7 +433,7 @@ const translations: Record<LangCode, TranslationSet> = {
         rain_24h: "மழை 24மணி", temp: "வெப்பம்", soil: "மண்",
         live: "நேரடி", cached: "தற்காலிக", offline: "ஆஃப்லைன்",
         dams_near: "அருகில் அணைகள்", reports_label: "அறிக்கைகள்",
-        copyright: "© 2024 FloodSense AI · NDRF · இந்திய அரசு",
+        copyright: "© 2024 Floody · NDRF · இந்திய அரசு",
     },
     te: {
         citizen_portal: "పౌర పోర్టల్", authority_portal: "NDRF / అధికార పోర్టల్",
@@ -488,7 +488,7 @@ const translations: Record<LangCode, TranslationSet> = {
         broadcast_sos: "SOS ప్రసారం", type_message: "సందేశం టైప్...", mesh_broadcast_desc: "అన్ని మెష్ నోడ్‌లకు ప్రసారం · TTL: 7",
         tap_voice_alert: "వాయిస్ హెచ్చరిక కోసం ట్యాప్", score: "స్కోర్",
         rain_24h: "వర్షం 24గం", temp: "ఉష్ణం", soil: "నేల", live: "లైవ్", cached: "కాష్", offline: "ఆఫ్‌లైన్",
-        dams_near: "సమీప ఆనకట్టలు", reports_label: "నివేదనలు", copyright: "© 2024 FloodSense AI · NDRF · భారత ప్రభుత్వం",
+        dams_near: "సమీప ఆనకట్టలు", reports_label: "నివేదనలు", copyright: "© 2024 Floody · NDRF · భారత ప్రభుత్వం",
     },
     mr: {
         citizen_portal: "नागरिक पोर्टल", authority_portal: "NDRF / प्राधिकरण पोर्टल",
@@ -541,7 +541,7 @@ const translations: Record<LangCode, TranslationSet> = {
         broadcast_sos: "SOS प्रसारित", type_message: "संदेश टाइप...", mesh_broadcast_desc: "सर्व मेश नोड्सला प्रसारित · TTL: 7",
         tap_voice_alert: "व्हॉइस अलर्टसाठी टॅप करा", score: "स्कोर",
         rain_24h: "पाऊस 24तास", temp: "तापमान", soil: "जमीन", live: "लाइव्ह", cached: "कॅश्ड", offline: "ऑफलाइन",
-        dams_near: "जवळचे धरणे", reports_label: "अहवाल", copyright: "© 2024 FloodSense AI · NDRF · भारत सरकार",
+        dams_near: "जवळचे धरणे", reports_label: "अहवाल", copyright: "© 2024 Floody · NDRF · भारत सरकार",
     },
     gu: {
         citizen_portal: "નાગરિક પોર્ટલ", authority_portal: "NDRF / સત્તામંડળ પોર્ટલ",
@@ -594,7 +594,7 @@ const translations: Record<LangCode, TranslationSet> = {
         broadcast_sos: "SOS પ્રસારિત", type_message: "સંદેશ ટાઇપ...", mesh_broadcast_desc: "બધા મેશ નોડ્સને પ્રસારિત · TTL: 7",
         tap_voice_alert: "વોઇસ ચેતવણી માટે ટેપ", score: "સ્કોર",
         rain_24h: "વરસાદ 24કલા", temp: "તાપમાન", soil: "જમીન", live: "લાઇવ", cached: "કેશ", offline: "ઑફલાઇન",
-        dams_near: "નજીકના બંધ", reports_label: "રિપોર્ટ", copyright: "© 2024 FloodSense AI · NDRF · ભારત સરકાર",
+        dams_near: "નજીકના બંધ", reports_label: "રિપોર્ટ", copyright: "© 2024 Floody · NDRF · ભારત સરકાર",
     },
     kn: {
         citizen_portal: "ನಾಗರಿಕ ಪೋರ್ಟಲ್", authority_portal: "NDRF / ಅಧಿಕಾರಿ ಪೋರ್ಟಲ್",
@@ -647,7 +647,7 @@ const translations: Record<LangCode, TranslationSet> = {
         broadcast_sos: "SOS ಪ್ರಸಾರ", type_message: "ಸಂದೇಶ ಟೈಪ್...", mesh_broadcast_desc: "ಎಲ್ಲ ನೋಡ್‌ಗಳಿಗೆ ಪ್ರಸಾರ · TTL: 7",
         tap_voice_alert: "ಧ್ವನಿ ಎಚ್ಚರಿಕೆಗೆ ಟ್ಯಾಪ್", score: "ಸ್ಕೋರ್",
         rain_24h: "ಮಳೆ 24ಗಂ", temp: "ತಾಪ", soil: "ಮಣ್ಣು", live: "ಲೈವ್", cached: "ಕ್ಯಾಶ್", offline: "ಆಫ್‌ಲೈನ್",
-        dams_near: "ಹತ್ತಿರದ ಅಣೆಕಟ್ಟು", reports_label: "ವರದಿ", copyright: "© 2024 FloodSense AI · NDRF · ಭಾರತ ಸರ್ಕಾರ",
+        dams_near: "ಹತ್ತಿರದ ಅಣೆಕಟ್ಟು", reports_label: "ವರದಿ", copyright: "© 2024 Floody · NDRF · ಭಾರತ ಸರ್ಕಾರ",
     },
     ml: {
         citizen_portal: "പൗര പോർട്ടൽ", authority_portal: "NDRF / അധികാരി പോർട്ടൽ",
@@ -716,7 +716,7 @@ const translations: Record<LangCode, TranslationSet> = {
         rain_24h: "वर्षा 24घं", temp: "तापमान", soil: "मिट्टी",
         live: "लाइव", cached: "कैश्ड", offline: "ऑफलाइन",
         dams_near: "निकट बांध", reports_label: "रिपोर्ट",
-        copyright: "© 2024 FloodSense AI · NDRF · भारत सरकार",
+        copyright: "© 2024 Floody · NDRF · भारत सरकार",
     },
     pa: {
         citizen_portal: "ਨਾਗਰਿਕ ਪੋਰਟਲ", authority_portal: "NDRF / ਅਥਾਰਟੀ ਪੋਰਟਲ",
@@ -785,7 +785,7 @@ const translations: Record<LangCode, TranslationSet> = {
         rain_24h: "वर्षा 24घं", temp: "तापमान", soil: "मिट्टी",
         live: "लाइव", cached: "कैश्ड", offline: "ऑफलाइन",
         dams_near: "निकट बांध", reports_label: "रिपोर्ट",
-        copyright: "© 2024 FloodSense AI · NDRF · भारत सरकार",
+        copyright: "© 2024 Floody · NDRF · भारत सरकार",
     },
     as: {
         citizen_portal: "নাগৰিক পৰ্টেল", authority_portal: "NDRF / কৰ্তৃপক্ষ পৰ্টেল",
@@ -854,7 +854,7 @@ const translations: Record<LangCode, TranslationSet> = {
         rain_24h: "वर्षा 24घं", temp: "तापमान", soil: "मिट्टी",
         live: "लाइव", cached: "कैश्ड", offline: "ऑफलाइन",
         dams_near: "निकट बांध", reports_label: "रिपोर्ट",
-        copyright: "© 2024 FloodSense AI · NDRF · भारत सरकार",
+        copyright: "© 2024 Floody · NDRF · भारत सरकार",
     },
     or: {
         citizen_portal: "ନାଗରିକ ପୋର୍ଟାଲ", authority_portal: "NDRF / ଅଧିକାରୀ ପୋର୍ଟାଲ",
@@ -923,7 +923,7 @@ const translations: Record<LangCode, TranslationSet> = {
         rain_24h: "वर्षा 24घं", temp: "तापमान", soil: "मिट्टी",
         live: "लाइव", cached: "कैश्ड", offline: "ऑफलाइन",
         dams_near: "निकट बांध", reports_label: "रिपोर्ट",
-        copyright: "© 2024 FloodSense AI · NDRF · भारत सरकार",
+        copyright: "© 2024 Floody · NDRF · भारत सरकार",
     },
 };
 
@@ -933,7 +933,7 @@ export function t(lang: string, key: keyof TranslationSet): string {
 }
 
 export function speak(text: string, lang: string = "English"): void {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    if(typeof window === 'undefined' || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     const langMap: Record<string, string> = {

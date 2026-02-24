@@ -1,135 +1,424 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FloodSense AI — ML & AI Technical Report</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;color:#1a1a2e;background:#fff;line-height:1.6;font-size:14px}
-@media print{body{font-size:12px}@page{margin:20mm}.page-break{page-break-before:always}}
-.cover{min-height:100vh;background:linear-gradient(135deg,#1a237e 0%,#283593 50%,#0d47a1 100%);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 40px}
-.cover h1{font-size:42px;font-weight:900;letter-spacing:-1px;margin-bottom:12px}
-.cover .subtitle{font-size:18px;color:rgba(255,255,255,0.8);margin-bottom:40px}
-.cover .badge{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:12px 24px;font-size:13px;margin:8px;display:inline-block}
-.cover .org{margin-top:60px;font-size:12px;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase}
-.tricolor{display:flex;height:6px}.tricolor div:nth-child(1){flex:1;background:#FF9933}.tricolor div:nth-child(2){flex:1;background:#fff}.tricolor div:nth-child(3){flex:1;background:#138808}
-.container{max-width:800px;margin:0 auto;padding:40px 30px}
-h2{font-size:22px;font-weight:900;color:#1a237e;margin:40px 0 16px;padding-bottom:8px;border-bottom:3px solid #1a237e}
-h3{font-size:16px;font-weight:700;color:#283593;margin:28px 0 12px}
-h4{font-size:14px;font-weight:600;color:#444;margin:16px 0 8px}
-p,li{line-height:1.7;color:#333}
-ul,ol{padding-left:24px;margin:8px 0}
-li{margin:4px 0}
-.card{background:#f8f9ff;border:1px solid #e0e3ff;border-radius:12px;padding:24px;margin:16px 0}
-.card h4{margin-top:0;color:#1a237e}
-.highlight{background:#fff3cd;border-left:4px solid #ffc107;padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;font-size:13px}
-.danger{background:#fff5f5;border-left:4px solid #e53e3e;padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;font-size:13px}
-.success{background:#f0fff4;border-left:4px solid #38a169;padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;font-size:13px}
-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
-th{background:#1a237e;color:#fff;padding:10px 12px;text-align:left;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.5px}
-td{padding:10px 12px;border-bottom:1px solid #e2e8f0}
-tr:nth-child(even) td{background:#f8f9ff}
-code{background:#e8eaf6;color:#1a237e;padding:2px 6px;border-radius:4px;font-family:'Courier New',monospace;font-size:12px}
-pre{background:#1a1a2e;color:#a5d6a7;padding:20px;border-radius:10px;overflow-x:auto;font-size:12px;line-height:1.5;margin:16px 0}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
-.metric{background:#f8f9ff;border:1px solid #e0e3ff;border-radius:10px;padding:16px;text-align:center}
-.metric .value{font-size:28px;font-weight:900;color:#1a237e}
-.metric .label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
-.arch-flow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:20px 0;font-size:12px}
-.arch-box{background:#e8eaf6;border:1px solid #c5cae9;border-radius:8px;padding:10px 16px;text-align:center;font-weight:600;color:#1a237e}
-.arch-arrow{color:#1a237e;font-weight:bold;font-size:18px}
-.toc{background:#f8f9ff;border:1px solid #e0e3ff;border-radius:12px;padding:24px;margin:20px 0}
-.toc h3{margin-top:0}
-.toc ol{padding-left:20px}
-.toc li{margin:6px 0;font-size:13px}
-.toc a{color:#1a237e;text-decoration:none;font-weight:600}
-.footer{text-align:center;margin-top:40px;padding:20px;border-top:1px solid #e2e8f0;font-size:11px;color:#999}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Floody — ML & AI Technical Report</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: #1a1a2e;
+      background: #fff;
+      line-height: 1.6;
+      font-size: 14px
+    }
+
+    @media print {
+      body {
+        font-size: 12px
+      }
+
+      @page {
+        margin: 20mm
+      }
+
+      .page-break {
+        page-break-before: always
+      }
+    }
+
+    .cover {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #0d47a1 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 40px
+    }
+
+    .cover h1 {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 12px
+    }
+
+    .cover .subtitle {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 40px
+    }
+
+    .cover .badge {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 13px;
+      margin: 8px;
+      display: inline-block
+    }
+
+    .cover .org {
+      margin-top: 60px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 2px;
+      text-transform: uppercase
+    }
+
+    .tricolor {
+      display: flex;
+      height: 6px
+    }
+
+    .tricolor div:nth-child(1) {
+      flex: 1;
+      background: #FF9933
+    }
+
+    .tricolor div:nth-child(2) {
+      flex: 1;
+      background: #fff
+    }
+
+    .tricolor div:nth-child(3) {
+      flex: 1;
+      background: #138808
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 30px
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 900;
+      color: #1a237e;
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 3px solid #1a237e
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #283593;
+      margin: 28px 0 12px
+    }
+
+    h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #444;
+      margin: 16px 0 8px
+    }
+
+    p,
+    li {
+      line-height: 1.7;
+      color: #333
+    }
+
+    ul,
+    ol {
+      padding-left: 24px;
+      margin: 8px 0
+    }
+
+    li {
+      margin: 4px 0
+    }
+
+    .card {
+      background: #f8f9ff;
+      border: 1px solid #e0e3ff;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 16px 0
+    }
+
+    .card h4 {
+      margin-top: 0;
+      color: #1a237e
+    }
+
+    .highlight {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+      font-size: 13px
+    }
+
+    .danger {
+      background: #fff5f5;
+      border-left: 4px solid #e53e3e;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+      font-size: 13px
+    }
+
+    .success {
+      background: #f0fff4;
+      border-left: 4px solid #38a169;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+      font-size: 13px
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 13px
+    }
+
+    th {
+      background: #1a237e;
+      color: #fff;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0
+    }
+
+    tr:nth-child(even) td {
+      background: #f8f9ff
+    }
+
+    code {
+      background: #e8eaf6;
+      color: #1a237e;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px
+    }
+
+    pre {
+      background: #1a1a2e;
+      color: #a5d6a7;
+      padding: 20px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 16px 0
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0
+    }
+
+    .metric {
+      background: #f8f9ff;
+      border: 1px solid #e0e3ff;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center
+    }
+
+    .metric .value {
+      font-size: 28px;
+      font-weight: 900;
+      color: #1a237e
+    }
+
+    .metric .label {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px
+    }
+
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+      font-size: 12px
+    }
+
+    .arch-box {
+      background: #e8eaf6;
+      border: 1px solid #c5cae9;
+      border-radius: 8px;
+      padding: 10px 16px;
+      text-align: center;
+      font-weight: 600;
+      color: #1a237e
+    }
+
+    .arch-arrow {
+      color: #1a237e;
+      font-weight: bold;
+      font-size: 18px
+    }
+
+    .toc {
+      background: #f8f9ff;
+      border: 1px solid #e0e3ff;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0
+    }
+
+    .toc h3 {
+      margin-top: 0
+    }
+
+    .toc ol {
+      padding-left: 20px
+    }
+
+    .toc li {
+      margin: 6px 0;
+      font-size: 13px
+    }
+
+    .toc a {
+      color: #1a237e;
+      text-decoration: none;
+      font-weight: 600
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 11px;
+      color: #999
+    }
+  </style>
 </head>
+
 <body>
-<!-- COVER PAGE -->
-<div class="tricolor"><div></div><div></div><div></div></div>
-<div class="cover">
-<div style="font-size:40px;margin-bottom:20px">🏛️</div>
-<h1>FloodSense AI</h1>
-<p class="subtitle">ML & AI Technical Stack Report</p>
-<p style="font-size:14px;color:rgba(255,255,255,0.7);max-width:500px">AI-Enabled Real-Time Flash Flood Forecasting and Alert System</p>
-<div style="margin-top:30px">
-<span class="badge">XGBoost ML</span>
-<span class="badge">Open-Meteo</span>
-<span class="badge">GloFAS</span>
-<span class="badge">FastAPI</span>
-<span class="badge">Next.js</span>
-<span class="badge">WebRTC</span>
-</div>
-<p class="org">National Disaster Response Force · Ministry of Home Affairs · Government of India</p>
-<p style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:20px">Report Generated: February 2026</p>
-</div>
+  <!-- COVER PAGE -->
+  <div class="tricolor">
+    <div></div>
+    <div></div>
+    <div></div>
+  </div>
+  <div class="cover">
+    <div style="font-size:40px;margin-bottom:20px">🏛️</div>
+    <h1>Floody</h1>
+    <p class="subtitle">ML & AI Technical Stack Report</p>
+    <p style="font-size:14px;color:rgba(255,255,255,0.7);max-width:500px">AI-Enabled Real-Time Flash Flood Forecasting
+      and Alert System</p>
+    <div style="margin-top:30px">
+      <span class="badge">XGBoost ML</span>
+      <span class="badge">Open-Meteo</span>
+      <span class="badge">GloFAS</span>
+      <span class="badge">FastAPI</span>
+      <span class="badge">Next.js</span>
+      <span class="badge">WebRTC</span>
+    </div>
+    <p class="org">National Disaster Response Force · Ministry of Home Affairs · Government of India</p>
+    <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:20px">Report Generated: February 2026</p>
+  </div>
 
-<div class="container">
+  <div class="container">
 
-<!-- TABLE OF CONTENTS -->
-<div class="toc">
-<h3>📋 Table of Contents</h3>
-<ol>
-<li><a href="#overview">System Overview & Architecture</a></li>
-<li><a href="#ml-model">ML Model — XGBoost Flood Risk Predictor</a></li>
-<li><a href="#training">Training Pipeline & Data</a></li>
-<li><a href="#features">Feature Engineering (10 Features)</a></li>
-<li><a href="#rule-engine">Physics-Informed Rule-Based Engine</a></li>
-<li><a href="#weather">Weather Data Pipeline (Open-Meteo)</a></li>
-<li><a href="#discharge">River Discharge Pipeline (GloFAS)</a></li>
-<li><a href="#alert-engine">Alert Generation Engine</a></li>
-<li><a href="#api-layer">API Architecture</a></li>
-<li><a href="#frontend-ai">Frontend AI Features</a></li>
-<li><a href="#performance">Model Performance & Metrics</a></li>
-<li><a href="#tech-stack">Complete Tech Stack Summary</a></li>
-</ol>
-</div>
+    <!-- TABLE OF CONTENTS -->
+    <div class="toc">
+      <h3>📋 Table of Contents</h3>
+      <ol>
+        <li><a href="#overview">System Overview & Architecture</a></li>
+        <li><a href="#ml-model">ML Model — XGBoost Flood Risk Predictor</a></li>
+        <li><a href="#training">Training Pipeline & Data</a></li>
+        <li><a href="#features">Feature Engineering (10 Features)</a></li>
+        <li><a href="#rule-engine">Physics-Informed Rule-Based Engine</a></li>
+        <li><a href="#weather">Weather Data Pipeline (Open-Meteo)</a></li>
+        <li><a href="#discharge">River Discharge Pipeline (GloFAS)</a></li>
+        <li><a href="#alert-engine">Alert Generation Engine</a></li>
+        <li><a href="#api-layer">API Architecture</a></li>
+        <li><a href="#frontend-ai">Frontend AI Features</a></li>
+        <li><a href="#performance">Model Performance & Metrics</a></li>
+        <li><a href="#tech-stack">Complete Tech Stack Summary</a></li>
+      </ol>
+    </div>
 
-<!-- 1. SYSTEM OVERVIEW -->
-<h2 id="overview">1. System Overview & Architecture</h2>
-<p>FloodSense AI is a multi-tier AI system for real-time flood risk assessment, combining <strong>machine learning prediction</strong>, <strong>real-time weather data ingestion</strong>, <strong>hydrological modeling</strong>, and <strong>automated alert generation</strong>. The system covers <strong>10 Indian states</strong> and <strong>30+ districts</strong> with district-level granularity.</p>
+    <!-- 1. SYSTEM OVERVIEW -->
+    <h2 id="overview">1. System Overview & Architecture</h2>
+    <p>Floody is a multi-tier AI system for real-time flood risk assessment, combining <strong>machine learning
+        prediction</strong>, <strong>real-time weather data ingestion</strong>, <strong>hydrological modeling</strong>,
+      and <strong>automated alert generation</strong>. The system covers <strong>10 Indian states</strong> and
+      <strong>30+ districts</strong> with district-level granularity.</p>
 
-<div class="arch-flow">
-<div class="arch-box">📡 Open-Meteo API<br><small>Weather + Forecast</small></div>
-<div class="arch-arrow">→</div>
-<div class="arch-box">🌊 GloFAS Flood API<br><small>River Discharge</small></div>
-<div class="arch-arrow">→</div>
-<div class="arch-box">🧠 AI Cortex<br><small>XGBoost + Rules</small></div>
-<div class="arch-arrow">→</div>
-<div class="arch-box">⚡ FastAPI<br><small>Prediction API</small></div>
-<div class="arch-arrow">→</div>
-<div class="arch-box">🖥️ Next.js<br><small>Dashboard</small></div>
-</div>
+    <div class="arch-flow">
+      <div class="arch-box">📡 Open-Meteo API<br><small>Weather + Forecast</small></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">🌊 GloFAS Flood API<br><small>River Discharge</small></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">🧠 AI Cortex<br><small>XGBoost + Rules</small></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">⚡ FastAPI<br><small>Prediction API</small></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">🖥️ Next.js<br><small>Dashboard</small></div>
+    </div>
 
-<div class="card">
-<h4>Three-Layer ML Architecture</h4>
-<ol>
-<li><strong>Data Layer:</strong> Real-time ingestion from Open-Meteo (weather) + GloFAS (river discharge)</li>
-<li><strong>ML Layer:</strong> XGBoost regression model with physics-informed rule-based fallback</li>
-<li><strong>Intelligence Layer:</strong> Automated alert generation, explainability, contributing factor analysis</li>
-</ol>
-</div>
+    <div class="card">
+      <h4>Three-Layer ML Architecture</h4>
+      <ol>
+        <li><strong>Data Layer:</strong> Real-time ingestion from Open-Meteo (weather) + GloFAS (river discharge)</li>
+        <li><strong>ML Layer:</strong> XGBoost regression model with physics-informed rule-based fallback</li>
+        <li><strong>Intelligence Layer:</strong> Automated alert generation, explainability, contributing factor
+          analysis</li>
+      </ol>
+    </div>
 
-<!-- 2. ML MODEL -->
-<h2 id="ml-model" class="page-break">2. ML Model — XGBoost Flood Risk Predictor</h2>
+    <!-- 2. ML MODEL -->
+    <h2 id="ml-model" class="page-break">2. ML Model — XGBoost Flood Risk Predictor</h2>
 
-<h3>2.1 Model Selection: Why XGBoost?</h3>
-<p>XGBoost (eXtreme Gradient Boosting) was selected as the primary ML algorithm for flood risk prediction based on several factors:</p>
-<ul>
-<li><strong>Handles mixed feature types:</strong> Weather (continuous), WMO codes (categorical), discharge (time-series derived)</li>
-<li><strong>Robust to missing data:</strong> Native support for sparse inputs — critical when API data is partially unavailable</li>
-<li><strong>Feature importance:</strong> Built-in SHAP-based importance scores for model explainability</li>
-<li><strong>Fast inference:</strong> Sub-millisecond prediction for real-time API response</li>
-<li><strong>Proven in hydrology:</strong> XGBoost is widely used in flood forecasting literature (INDOFLOODS, GloFAS calibration)</li>
-</ul>
+    <h3>2.1 Model Selection: Why XGBoost?</h3>
+    <p>XGBoost (eXtreme Gradient Boosting) was selected as the primary ML algorithm for flood risk prediction based on
+      several factors:</p>
+    <ul>
+      <li><strong>Handles mixed feature types:</strong> Weather (continuous), WMO codes (categorical), discharge
+        (time-series derived)</li>
+      <li><strong>Robust to missing data:</strong> Native support for sparse inputs — critical when API data is
+        partially unavailable</li>
+      <li><strong>Feature importance:</strong> Built-in SHAP-based importance scores for model explainability</li>
+      <li><strong>Fast inference:</strong> Sub-millisecond prediction for real-time API response</li>
+      <li><strong>Proven in hydrology:</strong> XGBoost is widely used in flood forecasting literature (INDOFLOODS,
+        GloFAS calibration)</li>
+    </ul>
 
-<h3>2.2 Model Configuration</h3>
-<div class="card">
-<pre>XGBRegressor(
+    <h3>2.2 Model Configuration</h3>
+    <div class="card">
+      <pre>XGBRegressor(
     n_estimators = 200,      # Number of boosting rounds
     max_depth = 6,           # Maximum tree depth
     learning_rate = 0.1,     # Shrinkage per step
@@ -138,52 +427,108 @@ pre{background:#1a1a2e;color:#a5d6a7;padding:20px;border-radius:10px;overflow-x:
     random_state = 42,       # Reproducibility
     verbosity = 0            # Silent training
 )</pre>
-</div>
+    </div>
 
-<h3>2.3 Model Type: Regression</h3>
-<p>The model is configured as <code>XGBRegressor</code> (not classifier) to output a <strong>continuous flood probability in [0, 1]</strong>. This approach was chosen over classification because:</p>
-<ul>
-<li>Provides granular risk scores (0.0 — 1.0) instead of binary flood/no-flood</li>
-<li>Enables threshold-based alert levels: LOW (&lt;0.25), MODERATE (0.25–0.5), HIGH (0.5–0.75), SEVERE (≥0.75)</li>
-<li>Allows probabilistic downstream decisions (e.g., evacuation timing based on probability × time)</li>
-</ul>
+    <h3>2.3 Model Type: Regression</h3>
+    <p>The model is configured as <code>XGBRegressor</code> (not classifier) to output a <strong>continuous flood
+        probability in [0, 1]</strong>. This approach was chosen over classification because:</p>
+    <ul>
+      <li>Provides granular risk scores (0.0 — 1.0) instead of binary flood/no-flood</li>
+      <li>Enables threshold-based alert levels: LOW (&lt;0.25), MODERATE (0.25–0.5), HIGH (0.5–0.75), SEVERE (≥0.75)
+      </li>
+      <li>Allows probabilistic downstream decisions (e.g., evacuation timing based on probability × time)</li>
+    </ul>
 
-<h3>2.4 Risk Classification Thresholds</h3>
-<table>
-<tr><th>Probability Range</th><th>Risk Level</th><th>Risk Score</th><th>Action</th></tr>
-<tr><td>≥ 0.75</td><td style="color:#c62828;font-weight:bold">SEVERE</td><td>7.5 – 10.0</td><td>Immediate evacuation. Contact NDRF 1078.</td></tr>
-<tr><td>0.50 – 0.74</td><td style="color:#e65100;font-weight:bold">HIGH</td><td>5.0 – 7.4</td><td>Prepare for flooding. Move valuables.</td></tr>
-<tr><td>0.25 – 0.49</td><td style="color:#f9a825;font-weight:bold">MODERATE</td><td>2.5 – 4.9</td><td>Stay alert. Monitor weather updates.</td></tr>
-<tr><td>&lt; 0.25</td><td style="color:#2e7d32;font-weight:bold">LOW</td><td>0.0 – 2.4</td><td>No immediate risk. Routine monitoring.</td></tr>
-</table>
+    <h3>2.4 Risk Classification Thresholds</h3>
+    <table>
+      <tr>
+        <th>Probability Range</th>
+        <th>Risk Level</th>
+        <th>Risk Score</th>
+        <th>Action</th>
+      </tr>
+      <tr>
+        <td>≥ 0.75</td>
+        <td style="color:#c62828;font-weight:bold">SEVERE</td>
+        <td>7.5 – 10.0</td>
+        <td>Immediate evacuation. Contact NDRF 1078.</td>
+      </tr>
+      <tr>
+        <td>0.50 – 0.74</td>
+        <td style="color:#e65100;font-weight:bold">HIGH</td>
+        <td>5.0 – 7.4</td>
+        <td>Prepare for flooding. Move valuables.</td>
+      </tr>
+      <tr>
+        <td>0.25 – 0.49</td>
+        <td style="color:#f9a825;font-weight:bold">MODERATE</td>
+        <td>2.5 – 4.9</td>
+        <td>Stay alert. Monitor weather updates.</td>
+      </tr>
+      <tr>
+        <td>&lt; 0.25</td>
+        <td style="color:#2e7d32;font-weight:bold">LOW</td>
+        <td>0.0 – 2.4</td>
+        <td>No immediate risk. Routine monitoring.</td>
+      </tr>
+    </table>
 
-<!-- 3. TRAINING PIPELINE -->
-<h2 id="training" class="page-break">3. Training Pipeline & Synthetic Data Generation</h2>
+    <!-- 3. TRAINING PIPELINE -->
+    <h2 id="training" class="page-break">3. Training Pipeline & Synthetic Data Generation</h2>
 
-<h3>3.1 Data Generation Strategy</h3>
-<p>The model trains on <strong>5,000 synthetic samples</strong> modeled after the <strong>INDOFLOODS dataset</strong> and Indian monsoon patterns. Synthetic data was used because:</p>
-<ul>
-<li>Real labeled flood event data is scarce and fragmented across states</li>
-<li>Allows controlled generation of extreme flood scenarios that are rare in real data</li>
-<li>Physics-based label generation ensures domain-accurate risk scores</li>
-</ul>
+    <h3>3.1 Data Generation Strategy</h3>
+    <p>The model trains on <strong>5,000 synthetic samples</strong> modeled after the <strong>INDOFLOODS
+        dataset</strong> and Indian monsoon patterns. Synthetic data was used because:</p>
+    <ul>
+      <li>Real labeled flood event data is scarce and fragmented across states</li>
+      <li>Allows controlled generation of extreme flood scenarios that are rare in real data</li>
+      <li>Physics-based label generation ensures domain-accurate risk scores</li>
+    </ul>
 
-<h3>3.2 Monsoon vs Dry Season Simulation</h3>
-<p>Data generation captures two distinct weather regimes in India:</p>
-<table>
-<tr><th>Parameter</th><th>Monsoon (40% of samples)</th><th>Dry Season (60% of samples)</th></tr>
-<tr><td>Rainfall (24h)</td><td>Exponential(30) + Uniform(5,20) mm</td><td>Exponential(5) mm</td></tr>
-<tr><td>Rainfall (7d)</td><td>24h × Uniform(3,7)</td><td>24h × Uniform(1,4)</td></tr>
-<tr><td>Soil Moisture</td><td>Uniform(0.5, 0.95)</td><td>Uniform(0.1, 0.5)</td></tr>
-<tr><td>River Discharge</td><td>Exponential(200) + 50 m³/s</td><td>Exponential(50) + 10 m³/s</td></tr>
-<tr><td>Humidity</td><td>70 — 98%</td><td>30 — 70%</td></tr>
-<tr><td>Temperature</td><td>22 — 35°C</td><td>15 — 42°C</td></tr>
-</table>
+    <h3>3.2 Monsoon vs Dry Season Simulation</h3>
+    <p>Data generation captures two distinct weather regimes in India:</p>
+    <table>
+      <tr>
+        <th>Parameter</th>
+        <th>Monsoon (40% of samples)</th>
+        <th>Dry Season (60% of samples)</th>
+      </tr>
+      <tr>
+        <td>Rainfall (24h)</td>
+        <td>Exponential(30) + Uniform(5,20) mm</td>
+        <td>Exponential(5) mm</td>
+      </tr>
+      <tr>
+        <td>Rainfall (7d)</td>
+        <td>24h × Uniform(3,7)</td>
+        <td>24h × Uniform(1,4)</td>
+      </tr>
+      <tr>
+        <td>Soil Moisture</td>
+        <td>Uniform(0.5, 0.95)</td>
+        <td>Uniform(0.1, 0.5)</td>
+      </tr>
+      <tr>
+        <td>River Discharge</td>
+        <td>Exponential(200) + 50 m³/s</td>
+        <td>Exponential(50) + 10 m³/s</td>
+      </tr>
+      <tr>
+        <td>Humidity</td>
+        <td>70 — 98%</td>
+        <td>30 — 70%</td>
+      </tr>
+      <tr>
+        <td>Temperature</td>
+        <td>22 — 35°C</td>
+        <td>15 — 42°C</td>
+      </tr>
+    </table>
 
-<h3>3.3 Physics-Based Label Generation</h3>
-<p>Flood probability labels are computed using a <strong>physics-informed scoring formula</strong>:</p>
-<div class="card">
-<pre>risk = 0.0
+    <h3>3.3 Physics-Based Label Generation</h3>
+    <p>Flood probability labels are computed using a <strong>physics-informed scoring formula</strong>:</p>
+    <div class="card">
+      <pre>risk = 0.0
 risk += min(rainfall_24h / 100, 1.0) × 3.0    # Rainfall intensity
 risk += min(rainfall_7d  / 400, 1.0) × 2.0    # Cumulative rainfall
 risk += soil_moisture × 2.5                     # Soil saturation
@@ -196,223 +541,460 @@ if weather_code in [53,55,61,80,81]:    risk += 0.5
 
 # Normalize to [0,1] + Gaussian noise (σ=0.05)
 probability = clamp(risk / 10.0 + N(0, 0.05), 0, 1)</pre>
-</div>
+    </div>
 
-<h3>3.4 Train/Test Split</h3>
-<ul>
-<li><strong>Training set:</strong> 80% (4,000 samples)</li>
-<li><strong>Test set:</strong> 20% (1,000 samples)</li>
-<li><strong>Random state:</strong> 42 (reproducible split)</li>
-<li><strong>Library:</strong> scikit-learn <code>train_test_split</code></li>
-</ul>
+    <h3>3.4 Train/Test Split</h3>
+    <ul>
+      <li><strong>Training set:</strong> 80% (4,000 samples)</li>
+      <li><strong>Test set:</strong> 20% (1,000 samples)</li>
+      <li><strong>Random state:</strong> 42 (reproducible split)</li>
+      <li><strong>Library:</strong> scikit-learn <code>train_test_split</code></li>
+    </ul>
 
-<!-- 4. FEATURES -->
-<h2 id="features" class="page-break">4. Feature Engineering — 10-Dimensional Input</h2>
-<p>The model uses exactly <strong>10 input features</strong> extracted from real-time weather APIs and hydrological data:</p>
+    <!-- 4. FEATURES -->
+    <h2 id="features" class="page-break">4. Feature Engineering — 10-Dimensional Input</h2>
+    <p>The model uses exactly <strong>10 input features</strong> extracted from real-time weather APIs and hydrological
+      data:</p>
 
-<table>
-<tr><th>#</th><th>Feature</th><th>Unit</th><th>Source</th><th>Description</th></tr>
-<tr><td>1</td><td><code>rainfall_24h</code></td><td>mm</td><td>Open-Meteo</td><td>Total precipitation in past 24 hours</td></tr>
-<tr><td>2</td><td><code>rainfall_7d</code></td><td>mm</td><td>Open-Meteo</td><td>Cumulative rainfall over 7 days</td></tr>
-<tr><td>3</td><td><code>soil_moisture</code></td><td>0–1</td><td>Open-Meteo</td><td>Soil moisture fraction (0–1cm depth)</td></tr>
-<tr><td>4</td><td><code>river_discharge</code></td><td>m³/s</td><td>GloFAS</td><td>Current river discharge at nearest point</td></tr>
-<tr><td>5</td><td><code>max_discharge_7d</code></td><td>m³/s</td><td>GloFAS</td><td>Maximum discharge over past 7 days</td></tr>
-<tr><td>6</td><td><code>avg_discharge_7d</code></td><td>m³/s</td><td>GloFAS</td><td>Average discharge over 7 days</td></tr>
-<tr><td>7</td><td><code>humidity</code></td><td>%</td><td>Open-Meteo</td><td>Relative humidity at 2m</td></tr>
-<tr><td>8</td><td><code>temperature</code></td><td>°C</td><td>Open-Meteo</td><td>Temperature at 2m</td></tr>
-<tr><td>9</td><td><code>wind_speed</code></td><td>km/h</td><td>Open-Meteo</td><td>Wind speed at 10m</td></tr>
-<tr><td>10</td><td><code>weather_code</code></td><td>WMO</td><td>Open-Meteo</td><td>WMO standard weather condition code</td></tr>
-</table>
+    <table>
+      <tr>
+        <th>#</th>
+        <th>Feature</th>
+        <th>Unit</th>
+        <th>Source</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td><code>rainfall_24h</code></td>
+        <td>mm</td>
+        <td>Open-Meteo</td>
+        <td>Total precipitation in past 24 hours</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>rainfall_7d</code></td>
+        <td>mm</td>
+        <td>Open-Meteo</td>
+        <td>Cumulative rainfall over 7 days</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>soil_moisture</code></td>
+        <td>0–1</td>
+        <td>Open-Meteo</td>
+        <td>Soil moisture fraction (0–1cm depth)</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>river_discharge</code></td>
+        <td>m³/s</td>
+        <td>GloFAS</td>
+        <td>Current river discharge at nearest point</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>max_discharge_7d</code></td>
+        <td>m³/s</td>
+        <td>GloFAS</td>
+        <td>Maximum discharge over past 7 days</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>avg_discharge_7d</code></td>
+        <td>m³/s</td>
+        <td>GloFAS</td>
+        <td>Average discharge over 7 days</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><code>humidity</code></td>
+        <td>%</td>
+        <td>Open-Meteo</td>
+        <td>Relative humidity at 2m</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><code>temperature</code></td>
+        <td>°C</td>
+        <td>Open-Meteo</td>
+        <td>Temperature at 2m</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td><code>wind_speed</code></td>
+        <td>km/h</td>
+        <td>Open-Meteo</td>
+        <td>Wind speed at 10m</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td><code>weather_code</code></td>
+        <td>WMO</td>
+        <td>Open-Meteo</td>
+        <td>WMO standard weather condition code</td>
+      </tr>
+    </table>
 
-<h3>4.1 Feature Importance (Post-Training)</h3>
-<p>After training, XGBoost reports feature importance via gain-based scoring. The top-5 features ranked by importance are:</p>
-<div class="grid">
-<div class="metric"><div class="value">🥇</div><div class="label">rainfall_24h</div></div>
-<div class="metric"><div class="value">🥈</div><div class="label">soil_moisture</div></div>
-<div class="metric"><div class="value">🥉</div><div class="label">river_discharge</div></div>
-<div class="metric"><div class="value">4th</div><div class="label">rainfall_7d</div></div>
-<div class="metric"><div class="value">5th</div><div class="label">weather_code</div></div>
-<div class="metric"><div class="value">6th</div><div class="label">humidity</div></div>
-</div>
+    <h3>4.1 Feature Importance (Post-Training)</h3>
+    <p>After training, XGBoost reports feature importance via gain-based scoring. The top-5 features ranked by
+      importance are:</p>
+    <div class="grid">
+      <div class="metric">
+        <div class="value">🥇</div>
+        <div class="label">rainfall_24h</div>
+      </div>
+      <div class="metric">
+        <div class="value">🥈</div>
+        <div class="label">soil_moisture</div>
+      </div>
+      <div class="metric">
+        <div class="value">🥉</div>
+        <div class="label">river_discharge</div>
+      </div>
+      <div class="metric">
+        <div class="value">4th</div>
+        <div class="label">rainfall_7d</div>
+      </div>
+      <div class="metric">
+        <div class="value">5th</div>
+        <div class="label">weather_code</div>
+      </div>
+      <div class="metric">
+        <div class="value">6th</div>
+        <div class="label">humidity</div>
+      </div>
+    </div>
 
-<!-- 5. RULE ENGINE -->
-<h2 id="rule-engine">5. Physics-Informed Rule-Based Fallback</h2>
-<p>When the trained XGBoost model is unavailable (cold start, dependency issues), the system falls back to a <strong>physics-informed rule engine</strong>:</p>
+    <!-- 5. RULE ENGINE -->
+    <h2 id="rule-engine">5. Physics-Informed Rule-Based Fallback</h2>
+    <p>When the trained XGBoost model is unavailable (cold start, dependency issues), the system falls back to a
+      <strong>physics-informed rule engine</strong>:</p>
 
-<table>
-<tr><th>Factor</th><th>Condition</th><th>Score Added</th></tr>
-<tr><td rowspan="4">Rainfall 24h</td><td>&gt; 200mm</td><td>+0.40</td></tr>
-<tr><td>&gt; 100mm</td><td>+0.30</td></tr>
-<tr><td>&gt; 50mm</td><td>+0.20</td></tr>
-<tr><td>&gt; 20mm</td><td>+0.10</td></tr>
-<tr><td rowspan="3">Cumulative 7d</td><td>&gt; 500mm</td><td>+0.25</td></tr>
-<tr><td>&gt; 200mm</td><td>+0.15</td></tr>
-<tr><td>&gt; 100mm</td><td>+0.08</td></tr>
-<tr><td rowspan="2">Soil Moisture</td><td>&gt; 80%</td><td>+0.20</td></tr>
-<tr><td>&gt; 50%</td><td>+0.10</td></tr>
-<tr><td rowspan="3">River Discharge</td><td>&gt; 5000 m³/s</td><td>+0.15</td></tr>
-<tr><td>&gt; 1000 m³/s</td><td>+0.08</td></tr>
-<tr><td>&gt; 100 m³/s</td><td>+0.03</td></tr>
-</table>
-<p><strong>Maximum possible rule-based score:</strong> 1.0 (clamped)</p>
+    <table>
+      <tr>
+        <th>Factor</th>
+        <th>Condition</th>
+        <th>Score Added</th>
+      </tr>
+      <tr>
+        <td rowspan="4">Rainfall 24h</td>
+        <td>&gt; 200mm</td>
+        <td>+0.40</td>
+      </tr>
+      <tr>
+        <td>&gt; 100mm</td>
+        <td>+0.30</td>
+      </tr>
+      <tr>
+        <td>&gt; 50mm</td>
+        <td>+0.20</td>
+      </tr>
+      <tr>
+        <td>&gt; 20mm</td>
+        <td>+0.10</td>
+      </tr>
+      <tr>
+        <td rowspan="3">Cumulative 7d</td>
+        <td>&gt; 500mm</td>
+        <td>+0.25</td>
+      </tr>
+      <tr>
+        <td>&gt; 200mm</td>
+        <td>+0.15</td>
+      </tr>
+      <tr>
+        <td>&gt; 100mm</td>
+        <td>+0.08</td>
+      </tr>
+      <tr>
+        <td rowspan="2">Soil Moisture</td>
+        <td>&gt; 80%</td>
+        <td>+0.20</td>
+      </tr>
+      <tr>
+        <td>&gt; 50%</td>
+        <td>+0.10</td>
+      </tr>
+      <tr>
+        <td rowspan="3">River Discharge</td>
+        <td>&gt; 5000 m³/s</td>
+        <td>+0.15</td>
+      </tr>
+      <tr>
+        <td>&gt; 1000 m³/s</td>
+        <td>+0.08</td>
+      </tr>
+      <tr>
+        <td>&gt; 100 m³/s</td>
+        <td>+0.03</td>
+      </tr>
+    </table>
+    <p><strong>Maximum possible rule-based score:</strong> 1.0 (clamped)</p>
 
-<!-- 6. WEATHER PIPELINE -->
-<h2 id="weather" class="page-break">6. Weather Data Pipeline — Open-Meteo Integration</h2>
+    <!-- 6. WEATHER PIPELINE -->
+    <h2 id="weather" class="page-break">6. Weather Data Pipeline — Open-Meteo Integration</h2>
 
-<h3>6.1 Data Source</h3>
-<div class="card">
-<h4>Open-Meteo API (Free, No API Key)</h4>
-<ul>
-<li><strong>URL:</strong> <code>https://api.open-meteo.com/v1/forecast</code></li>
-<li><strong>Coverage:</strong> Global, 1km resolution</li>
-<li><strong>Update frequency:</strong> Every 15 minutes</li>
-<li><strong>Sources:</strong> ECMWF IFS, GFS, MeteoFrance, DWD ICON</li>
-</ul>
-</div>
+    <h3>6.1 Data Source</h3>
+    <div class="card">
+      <h4>Open-Meteo API (Free, No API Key)</h4>
+      <ul>
+        <li><strong>URL:</strong> <code>https://api.open-meteo.com/v1/forecast</code></li>
+        <li><strong>Coverage:</strong> Global, 1km resolution</li>
+        <li><strong>Update frequency:</strong> Every 15 minutes</li>
+        <li><strong>Sources:</strong> ECMWF IFS, GFS, MeteoFrance, DWD ICON</li>
+      </ul>
+    </div>
 
-<h3>6.2 Parameters Fetched</h3>
-<table>
-<tr><th>Category</th><th>Parameters</th><th>Time Range</th></tr>
-<tr><td>Current</td><td>temperature_2m, humidity, precipitation, rain, weather_code, wind_speed</td><td>Now</td></tr>
-<tr><td>Hourly</td><td>precipitation, soil_moisture_0_to_1cm, temperature_2m</td><td>7d past + 3d forecast</td></tr>
-<tr><td>Daily</td><td>precipitation_sum, rain_sum</td><td>7d past + 3d forecast</td></tr>
-</table>
+    <h3>6.2 Parameters Fetched</h3>
+    <table>
+      <tr>
+        <th>Category</th>
+        <th>Parameters</th>
+        <th>Time Range</th>
+      </tr>
+      <tr>
+        <td>Current</td>
+        <td>temperature_2m, humidity, precipitation, rain, weather_code, wind_speed</td>
+        <td>Now</td>
+      </tr>
+      <tr>
+        <td>Hourly</td>
+        <td>precipitation, soil_moisture_0_to_1cm, temperature_2m</td>
+        <td>7d past + 3d forecast</td>
+      </tr>
+      <tr>
+        <td>Daily</td>
+        <td>precipitation_sum, rain_sum</td>
+        <td>7d past + 3d forecast</td>
+      </tr>
+    </table>
 
-<h3>6.3 Derived Calculations</h3>
-<ul>
-<li><strong>rainfall_24h:</strong> Sum of hourly precipitation for past 24 hours</li>
-<li><strong>rainfall_7d:</strong> Sum of hourly precipitation for past 168 hours</li>
-<li><strong>soil_moisture:</strong> Latest valid reading from hourly soil moisture at 0–1cm depth</li>
-<li><strong>daily_precipitation:</strong> Daily totals for trend visualization (bar charts)</li>
-</ul>
+    <h3>6.3 Derived Calculations</h3>
+    <ul>
+      <li><strong>rainfall_24h:</strong> Sum of hourly precipitation for past 24 hours</li>
+      <li><strong>rainfall_7d:</strong> Sum of hourly precipitation for past 168 hours</li>
+      <li><strong>soil_moisture:</strong> Latest valid reading from hourly soil moisture at 0–1cm depth</li>
+      <li><strong>daily_precipitation:</strong> Daily totals for trend visualization (bar charts)</li>
+    </ul>
 
-<!-- 7. DISCHARGE -->
-<h2 id="discharge">7. River Discharge Pipeline — GloFAS Integration</h2>
-<div class="card">
-<h4>Open-Meteo Flood API (GloFAS Data)</h4>
-<ul>
-<li><strong>URL:</strong> <code>https://flood-api.open-meteo.com/v1/flood</code></li>
-<li><strong>Data Source:</strong> ECMWF GloFAS (Global Flood Awareness System)</li>
-<li><strong>Coverage:</strong> Major river basins globally</li>
-<li><strong>Resolution:</strong> ~0.1° (~10km) grid cells</li>
-</ul>
-</div>
+    <!-- 7. DISCHARGE -->
+    <h2 id="discharge">7. River Discharge Pipeline — GloFAS Integration</h2>
+    <div class="card">
+      <h4>Open-Meteo Flood API (GloFAS Data)</h4>
+      <ul>
+        <li><strong>URL:</strong> <code>https://flood-api.open-meteo.com/v1/flood</code></li>
+        <li><strong>Data Source:</strong> ECMWF GloFAS (Global Flood Awareness System)</li>
+        <li><strong>Coverage:</strong> Major river basins globally</li>
+        <li><strong>Resolution:</strong> ~0.1° (~10km) grid cells</li>
+      </ul>
+    </div>
 
-<h3>7.1 Discharge Features Extracted</h3>
-<table>
-<tr><th>Feature</th><th>Calculation</th><th>Purpose</th></tr>
-<tr><td>current_discharge</td><td>Latest valid reading</td><td>Current river flow state</td></tr>
-<tr><td>max_discharge_7d</td><td>max(past 7 days)</td><td>Peak flow detection</td></tr>
-<tr><td>avg_discharge_7d</td><td>mean(past 7 days)</td><td>Baseline flow comparison</td></tr>
-<tr><td>discharge_trend</td><td>Full 10-day series</td><td>Visual trend analysis</td></tr>
-</table>
+    <h3>7.1 Discharge Features Extracted</h3>
+    <table>
+      <tr>
+        <th>Feature</th>
+        <th>Calculation</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td>current_discharge</td>
+        <td>Latest valid reading</td>
+        <td>Current river flow state</td>
+      </tr>
+      <tr>
+        <td>max_discharge_7d</td>
+        <td>max(past 7 days)</td>
+        <td>Peak flow detection</td>
+      </tr>
+      <tr>
+        <td>avg_discharge_7d</td>
+        <td>mean(past 7 days)</td>
+        <td>Baseline flow comparison</td>
+      </tr>
+      <tr>
+        <td>discharge_trend</td>
+        <td>Full 10-day series</td>
+        <td>Visual trend analysis</td>
+      </tr>
+    </table>
 
-<!-- 8. ALERT ENGINE -->
-<h2 id="alert-engine" class="page-break">8. Automated Alert Generation Engine</h2>
-<p>The alert service generates multi-type warnings based on <strong>real weather data thresholds</strong> aligned with IMD (India Meteorological Department) standards:</p>
+    <!-- 8. ALERT ENGINE -->
+    <h2 id="alert-engine" class="page-break">8. Automated Alert Generation Engine</h2>
+    <p>The alert service generates multi-type warnings based on <strong>real weather data thresholds</strong> aligned
+      with IMD (India Meteorological Department) standards:</p>
 
-<table>
-<tr><th>Alert Type</th><th>Trigger Condition</th><th>Severity</th></tr>
-<tr><td>Extreme Rainfall</td><td>rainfall_24h &gt; 100mm</td><td style="color:#c62828;font-weight:bold">SEVERE</td></tr>
-<tr><td>Heavy Rainfall</td><td>rainfall_24h &gt; 50mm</td><td style="color:#e65100;font-weight:bold">HIGH</td></tr>
-<tr><td>Moderate Rainfall</td><td>rainfall_24h &gt; 20mm</td><td style="color:#f9a825;font-weight:bold">MODERATE</td></tr>
-<tr><td>Soil Saturation</td><td>soil_moisture &gt; 80%</td><td style="color:#e65100;font-weight:bold">HIGH</td></tr>
-<tr><td>Prolonged Flooding</td><td>rainfall_7d &gt; 300mm</td><td style="color:#c62828;font-weight:bold">SEVERE</td></tr>
-<tr><td>Thunderstorm</td><td>WMO code ≥ 95</td><td style="color:#e65100;font-weight:bold">HIGH</td></tr>
-</table>
+    <table>
+      <tr>
+        <th>Alert Type</th>
+        <th>Trigger Condition</th>
+        <th>Severity</th>
+      </tr>
+      <tr>
+        <td>Extreme Rainfall</td>
+        <td>rainfall_24h &gt; 100mm</td>
+        <td style="color:#c62828;font-weight:bold">SEVERE</td>
+      </tr>
+      <tr>
+        <td>Heavy Rainfall</td>
+        <td>rainfall_24h &gt; 50mm</td>
+        <td style="color:#e65100;font-weight:bold">HIGH</td>
+      </tr>
+      <tr>
+        <td>Moderate Rainfall</td>
+        <td>rainfall_24h &gt; 20mm</td>
+        <td style="color:#f9a825;font-weight:bold">MODERATE</td>
+      </tr>
+      <tr>
+        <td>Soil Saturation</td>
+        <td>soil_moisture &gt; 80%</td>
+        <td style="color:#e65100;font-weight:bold">HIGH</td>
+      </tr>
+      <tr>
+        <td>Prolonged Flooding</td>
+        <td>rainfall_7d &gt; 300mm</td>
+        <td style="color:#c62828;font-weight:bold">SEVERE</td>
+      </tr>
+      <tr>
+        <td>Thunderstorm</td>
+        <td>WMO code ≥ 95</td>
+        <td style="color:#e65100;font-weight:bold">HIGH</td>
+      </tr>
+    </table>
 
-<h3>8.1 WMO Weather Codes Used</h3>
-<p>The system interprets 24 WMO standard weather codes for alert generation, with special attention to:</p>
-<ul>
-<li><strong>Code 63:</strong> Moderate rain — triggers elevated monitoring</li>
-<li><strong>Code 65:</strong> Heavy rain — triggers flood warnings</li>
-<li><strong>Code 82:</strong> Heavy rain showers — flash flood potential</li>
-<li><strong>Code 95-99:</strong> Thunderstorms — severe weather alert</li>
-</ul>
+    <h3>8.1 WMO Weather Codes Used</h3>
+    <p>The system interprets 24 WMO standard weather codes for alert generation, with special attention to:</p>
+    <ul>
+      <li><strong>Code 63:</strong> Moderate rain — triggers elevated monitoring</li>
+      <li><strong>Code 65:</strong> Heavy rain — triggers flood warnings</li>
+      <li><strong>Code 82:</strong> Heavy rain showers — flash flood potential</li>
+      <li><strong>Code 95-99:</strong> Thunderstorms — severe weather alert</li>
+    </ul>
 
-<!-- 9. API ARCHITECTURE -->
-<h2 id="api-layer">9. API Architecture</h2>
+    <!-- 9. API ARCHITECTURE -->
+    <h2 id="api-layer">9. API Architecture</h2>
 
-<h3>9.1 AI Cortex (Python/FastAPI)</h3>
-<table>
-<tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr>
-<tr><td><code>/predict</code></td><td>POST</td><td>Single location flood risk prediction</td></tr>
-<tr><td><code>/predict/bulk</code></td><td>POST</td><td>Batch prediction for map (≤50 locations)</td></tr>
-<tr><td><code>/weather</code></td><td>GET</td><td>Raw weather data for a lat/lon</td></tr>
-<tr><td><code>/discharge</code></td><td>GET</td><td>River discharge data for a lat/lon</td></tr>
-<tr><td><code>/alerts</code></td><td>GET</td><td>Weather-based alerts for a location</td></tr>
-<tr><td><code>/health</code></td><td>GET</td><td>Service health check</td></tr>
-</table>
+    <h3>9.1 AI Cortex (Python/FastAPI)</h3>
+    <table>
+      <tr>
+        <th>Endpoint</th>
+        <th>Method</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td><code>/predict</code></td>
+        <td>POST</td>
+        <td>Single location flood risk prediction</td>
+      </tr>
+      <tr>
+        <td><code>/predict/bulk</code></td>
+        <td>POST</td>
+        <td>Batch prediction for map (≤50 locations)</td>
+      </tr>
+      <tr>
+        <td><code>/weather</code></td>
+        <td>GET</td>
+        <td>Raw weather data for a lat/lon</td>
+      </tr>
+      <tr>
+        <td><code>/discharge</code></td>
+        <td>GET</td>
+        <td>River discharge data for a lat/lon</td>
+      </tr>
+      <tr>
+        <td><code>/alerts</code></td>
+        <td>GET</td>
+        <td>Weather-based alerts for a location</td>
+      </tr>
+      <tr>
+        <td><code>/health</code></td>
+        <td>GET</td>
+        <td>Service health check</td>
+      </tr>
+    </table>
 
-<h3>9.2 Backend (Node.js/Express)</h3>
-<ul>
-<li>Proxies requests to AI Cortex for ML predictions</li>
-<li>Direct Open-Meteo fallback when AI Cortex is unavailable</li>
-<li>WebSocket (Socket.IO) for real-time alert broadcasting</li>
-<li>Authentication and session management</li>
-</ul>
+    <h3>9.2 Backend (Node.js/Express)</h3>
+    <ul>
+      <li>Proxies requests to AI Cortex for ML predictions</li>
+      <li>Direct Open-Meteo fallback when AI Cortex is unavailable</li>
+      <li>WebSocket (Socket.IO) for real-time alert broadcasting</li>
+      <li>Authentication and session management</li>
+    </ul>
 
-<h3>9.3 Prediction Pipeline (Per Request)</h3>
-<div class="arch-flow">
-<div class="arch-box">Client Request<br>(lat, lon)</div>
-<div class="arch-arrow">→</div>
-<div class="arch-box">Open-Meteo<br>Weather Fetch</div>
-<div class="arch-arrow">→</div>
-<div class="arch-box">GloFAS<br>Discharge Fetch</div>
-<div class="arch-arrow">→</div>
-<div class="arch-box">Feature Vector<br>(10 features)</div>
-<div class="arch-arrow">→</div>
-<div class="arch-box">XGBoost<br>Predict</div>
-<div class="arch-arrow">→</div>
-<div class="arch-box">Risk + Alerts<br>Response</div>
-</div>
+    <h3>9.3 Prediction Pipeline (Per Request)</h3>
+    <div class="arch-flow">
+      <div class="arch-box">Client Request<br>(lat, lon)</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Open-Meteo<br>Weather Fetch</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">GloFAS<br>Discharge Fetch</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Feature Vector<br>(10 features)</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">XGBoost<br>Predict</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Risk + Alerts<br>Response</div>
+    </div>
 
-<!-- 10. FRONTEND AI -->
-<h2 id="frontend-ai" class="page-break">10. Frontend AI & Intelligence Features</h2>
+    <!-- 10. FRONTEND AI -->
+    <h2 id="frontend-ai" class="page-break">10. Frontend AI & Intelligence Features</h2>
 
-<h3>10.1 Text-to-Speech Voice AI</h3>
-<ul>
-<li><strong>API:</strong> Web Speech API (<code>speechSynthesis</code>)</li>
-<li><strong>"Am I Safe?" button:</strong> Reads flood risk status aloud in selected language</li>
-<li><strong>Languages:</strong> 12 Indian languages (Hindi, Tamil, Bengali, Marathi, Telugu, Kannada, Gujarati, Malayalam, Odia, Punjabi, Urdu, English)</li>
-</ul>
+    <h3>10.1 Text-to-Speech Voice AI</h3>
+    <ul>
+      <li><strong>API:</strong> Web Speech API (<code>speechSynthesis</code>)</li>
+      <li><strong>"Am I Safe?" button:</strong> Reads flood risk status aloud in selected language</li>
+      <li><strong>Languages:</strong> 12 Indian languages (Hindi, Tamil, Bengali, Marathi, Telugu, Kannada, Gujarati,
+        Malayalam, Odia, Punjabi, Urdu, English)</li>
+    </ul>
 
-<h3>10.2 SIM-Based GPS via Cell Tower Triangulation</h3>
-<ul>
-<li><strong>Primary:</strong> Navigator.geolocation API (GPS/Wi-Fi)</li>
-<li><strong>Fallback:</strong> Simulated cell tower triangulation (like "Where is my Train")</li>
-<li><strong>Data provided:</strong> Lat/Lon, accuracy (±meters), method, tower ID, signal strength (dBm)</li>
-<li><strong>Nearest towers:</strong> Shows 3 closest cell towers with signal info</li>
-</ul>
+    <h3>10.2 SIM-Based GPS via Cell Tower Triangulation</h3>
+    <ul>
+      <li><strong>Primary:</strong> Navigator.geolocation API (GPS/Wi-Fi)</li>
+      <li><strong>Fallback:</strong> Simulated cell tower triangulation (like "Where is my Train")</li>
+      <li><strong>Data provided:</strong> Lat/Lon, accuracy (±meters), method, tower ID, signal strength (dBm)</li>
+      <li><strong>Nearest towers:</strong> Shows 3 closest cell towers with signal info</li>
+    </ul>
 
-<h3>10.3 Offline Intelligence</h3>
-<ul>
-<li><strong>Detection:</strong> <code>navigator.onLine</code> with event listeners</li>
-<li><strong>Cache strategy:</strong> Latest risk assessment cached in <code>localStorage</code></li>
-<li><strong>Offline behavior:</strong> Shows cached risk with "Cached" badge instead of "Live"</li>
-</ul>
+    <h3>10.3 Offline Intelligence</h3>
+    <ul>
+      <li><strong>Detection:</strong> <code>navigator.onLine</code> with event listeners</li>
+      <li><strong>Cache strategy:</strong> Latest risk assessment cached in <code>localStorage</code></li>
+      <li><strong>Offline behavior:</strong> Shows cached risk with "Cached" badge instead of "Live"</li>
+    </ul>
 
-<h3>10.4 Multilingual Translation System</h3>
-<ul>
-<li><strong>Implementation:</strong> Static translation dictionary (<code>translations.ts</code>)</li>
-<li><strong>Coverage:</strong> 30+ UI strings × 12 languages = 360+ translations</li>
-<li><strong>No external API dependency:</strong> Works fully offline</li>
-</ul>
+    <h3>10.4 Multilingual Translation System</h3>
+    <ul>
+      <li><strong>Implementation:</strong> Static translation dictionary (<code>translations.ts</code>)</li>
+      <li><strong>Coverage:</strong> 30+ UI strings × 12 languages = 360+ translations</li>
+      <li><strong>No external API dependency:</strong> Works fully offline</li>
+    </ul>
 
-<!-- 11. PERFORMANCE -->
-<h2 id="performance">11. Model Performance & Metrics</h2>
+    <!-- 11. PERFORMANCE -->
+    <h2 id="performance">11. Model Performance & Metrics</h2>
 
-<div class="grid">
-<div class="metric"><div class="value" style="color:#2e7d32">~0.04</div><div class="label">Mean Absolute Error</div></div>
-<div class="metric"><div class="value" style="color:#1a237e">~0.95</div><div class="label">R² Score</div></div>
-<div class="metric"><div class="value">200</div><div class="label">Trees (Estimators)</div></div>
-<div class="metric"><div class="value">10</div><div class="label">Input Features</div></div>
-</div>
+    <div class="grid">
+      <div class="metric">
+        <div class="value" style="color:#2e7d32">~0.04</div>
+        <div class="label">Mean Absolute Error</div>
+      </div>
+      <div class="metric">
+        <div class="value" style="color:#1a237e">~0.95</div>
+        <div class="label">R² Score</div>
+      </div>
+      <div class="metric">
+        <div class="value">200</div>
+        <div class="label">Trees (Estimators)</div>
+      </div>
+      <div class="metric">
+        <div class="value">10</div>
+        <div class="label">Input Features</div>
+      </div>
+    </div>
 
-<h3>11.1 Model Explainability</h3>
-<p>Every prediction includes a <code>contributing_factors</code> array for transparency:</p>
-<div class="card">
-<pre>{
+    <h3>11.1 Model Explainability</h3>
+    <p>Every prediction includes a <code>contributing_factors</code> array for transparency:</p>
+    <div class="card">
+      <pre>{
   "risk_level": "HIGH",
   "probability": 0.623,
   "risk_score": 6.2,
@@ -424,65 +1006,175 @@ probability = clamp(risk / 10.0 + N(0, 0.05), 0, 1)</pre>
   "model": "trained",
   "features_used": { "rainfall_24h": 82.3, "soil_moisture": 0.78, ... }
 }</pre>
-</div>
+    </div>
 
-<h3>11.2 Dual-Model Safety</h3>
-<div class="success">
-<strong>✅ Graceful degradation:</strong> If the XGBoost model fails to load or predict, the system automatically falls back to the physics-informed rule engine — ensuring <strong>zero downtime</strong> for risk predictions.
-</div>
+    <h3>11.2 Dual-Model Safety</h3>
+    <div class="success">
+      <strong>✅ Graceful degradation:</strong> If the XGBoost model fails to load or predict, the system automatically
+      falls back to the physics-informed rule engine — ensuring <strong>zero downtime</strong> for risk predictions.
+    </div>
 
-<!-- 12. TECH STACK -->
-<h2 id="tech-stack" class="page-break">12. Complete Technology Stack</h2>
+    <!-- 12. TECH STACK -->
+    <h2 id="tech-stack" class="page-break">12. Complete Technology Stack</h2>
 
-<h3>12.1 ML & AI</h3>
-<table>
-<tr><th>Component</th><th>Technology</th><th>Purpose</th></tr>
-<tr><td>Primary ML Model</td><td>XGBoost (XGBRegressor)</td><td>Flood probability regression</td></tr>
-<tr><td>Model Serialization</td><td>joblib</td><td>Model persistence (.joblib format)</td></tr>
-<tr><td>Data Processing</td><td>NumPy</td><td>Feature vector computation</td></tr>
-<tr><td>Evaluation</td><td>scikit-learn</td><td>MAE, R² metrics, train/test split</td></tr>
-<tr><td>Fallback Engine</td><td>Custom Python</td><td>Physics-informed rule-based risk</td></tr>
-<tr><td>Voice AI</td><td>Web Speech API</td><td>Text-to-speech in 12 languages</td></tr>
-<tr><td>Location AI</td><td>Geolocation API + Sim GPS</td><td>Cell tower triangulation</td></tr>
-</table>
+    <h3>12.1 ML & AI</h3>
+    <table>
+      <tr>
+        <th>Component</th>
+        <th>Technology</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td>Primary ML Model</td>
+        <td>XGBoost (XGBRegressor)</td>
+        <td>Flood probability regression</td>
+      </tr>
+      <tr>
+        <td>Model Serialization</td>
+        <td>joblib</td>
+        <td>Model persistence (.joblib format)</td>
+      </tr>
+      <tr>
+        <td>Data Processing</td>
+        <td>NumPy</td>
+        <td>Feature vector computation</td>
+      </tr>
+      <tr>
+        <td>Evaluation</td>
+        <td>scikit-learn</td>
+        <td>MAE, R² metrics, train/test split</td>
+      </tr>
+      <tr>
+        <td>Fallback Engine</td>
+        <td>Custom Python</td>
+        <td>Physics-informed rule-based risk</td>
+      </tr>
+      <tr>
+        <td>Voice AI</td>
+        <td>Web Speech API</td>
+        <td>Text-to-speech in 12 languages</td>
+      </tr>
+      <tr>
+        <td>Location AI</td>
+        <td>Geolocation API + Sim GPS</td>
+        <td>Cell tower triangulation</td>
+      </tr>
+    </table>
 
-<h3>12.2 Data Sources & APIs</h3>
-<table>
-<tr><th>API</th><th>Type</th><th>Data Provided</th></tr>
-<tr><td>Open-Meteo Forecast</td><td>REST (Free)</td><td>Weather, precipitation, soil moisture, humidity, wind</td></tr>
-<tr><td>Open-Meteo Flood (GloFAS)</td><td>REST (Free)</td><td>River discharge, flood warnings</td></tr>
-<tr><td>NDMA SACHET</td><td>Reference</td><td>National disaster alert guidelines</td></tr>
-<tr><td>IMD Standards</td><td>Reference</td><td>Rainfall threshold classifications</td></tr>
-</table>
+    <h3>12.2 Data Sources & APIs</h3>
+    <table>
+      <tr>
+        <th>API</th>
+        <th>Type</th>
+        <th>Data Provided</th>
+      </tr>
+      <tr>
+        <td>Open-Meteo Forecast</td>
+        <td>REST (Free)</td>
+        <td>Weather, precipitation, soil moisture, humidity, wind</td>
+      </tr>
+      <tr>
+        <td>Open-Meteo Flood (GloFAS)</td>
+        <td>REST (Free)</td>
+        <td>River discharge, flood warnings</td>
+      </tr>
+      <tr>
+        <td>NDMA SACHET</td>
+        <td>Reference</td>
+        <td>National disaster alert guidelines</td>
+      </tr>
+      <tr>
+        <td>IMD Standards</td>
+        <td>Reference</td>
+        <td>Rainfall threshold classifications</td>
+      </tr>
+    </table>
 
-<h3>12.3 Backend</h3>
-<table>
-<tr><th>Component</th><th>Technology</th><th>Version</th></tr>
-<tr><td>AI Service</td><td>FastAPI (Python)</td><td>Python 3.11+</td></tr>
-<tr><td>HTTP Client</td><td>httpx (async)</td><td>Latest</td></tr>
-<tr><td>Core API</td><td>Express.js (Node.js)</td><td>Node 18+</td></tr>
-<tr><td>Real-time</td><td>Socket.IO</td><td>v4</td></tr>
-<tr><td>Schema Validation</td><td>Pydantic v2</td><td>FastAPI built-in</td></tr>
-</table>
+    <h3>12.3 Backend</h3>
+    <table>
+      <tr>
+        <th>Component</th>
+        <th>Technology</th>
+        <th>Version</th>
+      </tr>
+      <tr>
+        <td>AI Service</td>
+        <td>FastAPI (Python)</td>
+        <td>Python 3.11+</td>
+      </tr>
+      <tr>
+        <td>HTTP Client</td>
+        <td>httpx (async)</td>
+        <td>Latest</td>
+      </tr>
+      <tr>
+        <td>Core API</td>
+        <td>Express.js (Node.js)</td>
+        <td>Node 18+</td>
+      </tr>
+      <tr>
+        <td>Real-time</td>
+        <td>Socket.IO</td>
+        <td>v4</td>
+      </tr>
+      <tr>
+        <td>Schema Validation</td>
+        <td>Pydantic v2</td>
+        <td>FastAPI built-in</td>
+      </tr>
+    </table>
 
-<h3>12.4 Frontend</h3>
-<table>
-<tr><th>Component</th><th>Technology</th><th>Purpose</th></tr>
-<tr><td>Framework</td><td>Next.js 16 (React 19)</td><td>SSR + Client-side rendering</td></tr>
-<tr><td>Mapping</td><td>MapLibre GL JS</td><td>NDRF command map dashboard</td></tr>
-<tr><td>Maps (Citizen)</td><td>OpenStreetMap Embeds</td><td>Evacuation routes, dam locations</td></tr>
-<tr><td>Navigation</td><td>Google Maps Directions</td><td>Turn-by-turn shelter navigation</td></tr>
-<tr><td>Styling</td><td>Tailwind CSS</td><td>Government-style UI</td></tr>
-<tr><td>Icons</td><td>Lucide React</td><td>UI iconography</td></tr>
-</table>
+    <h3>12.4 Frontend</h3>
+    <table>
+      <tr>
+        <th>Component</th>
+        <th>Technology</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td>Framework</td>
+        <td>Next.js 16 (React 19)</td>
+        <td>SSR + Client-side rendering</td>
+      </tr>
+      <tr>
+        <td>Mapping</td>
+        <td>MapLibre GL JS</td>
+        <td>NDRF command map dashboard</td>
+      </tr>
+      <tr>
+        <td>Maps (Citizen)</td>
+        <td>OpenStreetMap Embeds</td>
+        <td>Evacuation routes, dam locations</td>
+      </tr>
+      <tr>
+        <td>Navigation</td>
+        <td>Google Maps Directions</td>
+        <td>Turn-by-turn shelter navigation</td>
+      </tr>
+      <tr>
+        <td>Styling</td>
+        <td>Tailwind CSS</td>
+        <td>Government-style UI</td>
+      </tr>
+      <tr>
+        <td>Icons</td>
+        <td>Lucide React</td>
+        <td>UI iconography</td>
+      </tr>
+    </table>
 
-<div class="footer">
-<div class="tricolor" style="margin-bottom:12px"><div></div><div></div><div></div></div>
-<p><strong>FloodSense AI</strong> — AI-Enabled Real-Time Flash Flood Forecasting and Alert System</p>
-<p>National Disaster Response Force · Ministry of Home Affairs · Government of India</p>
-<p style="margin-top:8px">Report generated February 2026 · Version 2.0</p>
-</div>
+    <div class="footer">
+      <div class="tricolor" style="margin-bottom:12px">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+      <p><strong>Floody</strong> — AI-Enabled Real-Time Flash Flood Forecasting and Alert System</p>
+      <p>National Disaster Response Force · Ministry of Home Affairs · Government of India</p>
+      <p style="margin-top:8px">Report generated February 2026 · Version 2.0</p>
+    </div>
 
-</div><!-- end container -->
+  </div><!-- end container -->
 </body>
+
 </html>

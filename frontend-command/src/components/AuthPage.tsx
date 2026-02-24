@@ -27,6 +27,9 @@ export default function AuthPage({ onLogin }: AuthFormProps) {
     // Authority fields
     const [serviceId, setServiceId] = useState("");
     const [battalion, setBattalion] = useState("");
+    // Family members for citizen signup
+    const [familyMembers, setFamilyMembers] = useState<Array<{ name: string; phone: string; relation: string }>>([]);
+    const [fullName, setFullName] = useState("");
 
     const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -87,6 +90,10 @@ export default function AuthPage({ onLogin }: AuthFormProps) {
         if(e.key === "Backspace" && !otp[index] && index > 0) {
             otpRefs.current[index - 1]?.focus();
         }
+        // Enter key on last OTP digit → auto verify
+        if(e.key === "Enter" && otp.join("").length === 6) {
+            handleVerifyOtp();
+        }
     };
 
     const handleOtpPaste = (e: React.ClipboardEvent) => {
@@ -138,7 +145,7 @@ export default function AuthPage({ onLogin }: AuthFormProps) {
                 <div className="max-w-5xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-2xl">🏛️</div>
-                        <div><h1 className="text-sm md:text-base font-bold tracking-wide">FloodSense AI</h1><p className="text-[10px] md:text-xs text-blue-200">National Disaster Response Force · Ministry of Home Affairs</p></div>
+                        <div><h1 className="text-sm md:text-base font-bold tracking-wide">Floody</h1><p className="text-[10px] md:text-xs text-blue-200">National Disaster Response Force · Ministry of Home Affairs</p></div>
                     </div>
                     <div className="hidden md:flex items-center gap-2 text-[10px] text-blue-200"><span>भारत सरकार</span><span className="text-white/30">|</span><span>Government of India</span></div>
                 </div>
@@ -209,6 +216,7 @@ export default function AuthPage({ onLogin }: AuthFormProps) {
                                     <div className="bg-gray-50 px-3 py-2.5 border-r border-gray-200 text-sm text-gray-600 font-mono">+91</div>
                                     <input type="tel" maxLength={10} value={phone}
                                         onChange={e => setPhone(e.target.value.replace(/\D/g, ""))}
+                                        onKeyDown={e => { if(e.key === "Enter" && phone.length >= 10 && !otpSent) handleSendOtp(); }}
                                         placeholder="Enter 10-digit number"
                                         disabled={otpSent}
                                         className="flex-1 px-3 py-2.5 text-sm text-gray-800 outline-none bg-transparent disabled:text-gray-400" />
@@ -302,6 +310,7 @@ export default function AuthPage({ onLogin }: AuthFormProps) {
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 mb-1">Service ID</label>
                                 <input type="text" value={serviceId} onChange={e => setServiceId(e.target.value)}
+                                    onKeyDown={e => { if(e.key === "Enter" && serviceId && battalion) handleLogin(); }}
                                     placeholder="e.g. NDRF-2024-0042" className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm text-gray-800 focus:border-[#1a237e] outline-none" />
                             </div>
                             <div>
@@ -326,7 +335,15 @@ export default function AuthPage({ onLogin }: AuthFormProps) {
     // ─── STEP 3: CITIZEN → straight to dashboard (auto-login after OTP) ───
     if(role === "citizen") {
         // Auto proceed
-        if(!loading) { setLoading(true); setTimeout(() => onLogin("citizen"), 600); }
+        if(!loading) {
+            setLoading(true);
+            // Store family members if any
+            if(typeof window !== 'undefined') {
+                localStorage.setItem('familyMembers', JSON.stringify(familyMembers));
+                localStorage.setItem('userName', fullName);
+            }
+            setTimeout(() => onLogin("citizen"), 600);
+        }
         return (
             <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f5f5f0]">
                 <Loader2 className="w-8 h-8 text-[#1a237e] animate-spin mb-3" />

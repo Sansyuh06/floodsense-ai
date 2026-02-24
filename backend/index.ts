@@ -28,11 +28,70 @@ db.exec(`
     id TEXT PRIMARY KEY,
     phone TEXT UNIQUE NOT NULL,
     fullName TEXT,
+    email TEXT,
     state TEXT,
     district TEXT,
+    homeLat REAL,
+    homeLon REAL,
     role TEXT DEFAULT 'CITIZEN',
+    ndrfBattalion TEXT,
+    familyId TEXT,
     createdAt TEXT DEFAULT (datetime('now')),
     updatedAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS family_members (
+    id TEXT PRIMARY KEY,
+    familyId TEXT NOT NULL,
+    userId TEXT,
+    memberName TEXT NOT NULL,
+    memberPhone TEXT NOT NULL,
+    relation TEXT DEFAULT 'OTHER',
+    specialNeeds TEXT,
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS sos_alerts (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    familyId TEXT,
+    lat REAL NOT NULL,
+    lon REAL NOT NULL,
+    category TEXT DEFAULT 'FLOOD',
+    message TEXT,
+    status TEXT DEFAULT 'ACTIVE',
+    assignedNdrfTeam TEXT,
+    resolvedAt TEXT,
+    createdAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (userId) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS relief_camps (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    lat REAL NOT NULL,
+    lon REAL NOT NULL,
+    capacity INTEGER DEFAULT 100,
+    currentOccupancy INTEGER DEFAULT 0,
+    facilities TEXT,
+    isActive INTEGER DEFAULT 1,
+    createdBy TEXT,
+    contactPhone TEXT,
+    address TEXT,
+    createdAt TEXT DEFAULT (datetime('now')),
+    updatedAt TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (createdBy) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS flooded_segments (
+    id TEXT PRIMARY KEY,
+    lat REAL NOT NULL,
+    lon REAL NOT NULL,
+    radius REAL DEFAULT 0.5,
+    severity TEXT DEFAULT 'MODERATE',
+    reportId TEXT,
+    isActive INTEGER DEFAULT 1,
+    createdAt TEXT DEFAULT (datetime('now'))
   );
 
   CREATE TABLE IF NOT EXISTS alerts (
@@ -58,6 +117,7 @@ db.exec(`
     photoUrl TEXT,
     severity TEXT DEFAULT 'MODERATE',
     status TEXT DEFAULT 'PENDING',
+    assignedVolunteerId TEXT,
     upvotes INTEGER DEFAULT 0,
     createdAt TEXT DEFAULT (datetime('now')),
     updatedAt TEXT DEFAULT (datetime('now')),
@@ -98,6 +158,10 @@ db.exec(`
   );
 `);
 
+// Ensure uploads directory
+const UPLOADS_DIR = path.resolve(__dirname, 'uploads');
+fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
 console.log(`[DB] SQLite ready at ${DB_PATH}`);
 
 // ─── App Setup ──────────────────────────────────────
@@ -113,7 +177,9 @@ const PORT = process.env.PORT || 4000;
 // ─── Security Middleware ────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '10mb' }));
+// Serve uploaded photos
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200, message: { status: 'error', message: 'Too many requests. Try again in 15 minutes.' } });
 const otpLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 5, message: { status: 'error', message: 'Too many OTP requests. Wait 5 minutes.' } });
@@ -150,6 +216,47 @@ function validatePhone(phone: string): boolean {
     return /^\d{10,15}$/.test((phone || '').replace(/\D/g, ''));
 }
 
+// Haversine distance (km)
+function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// NDRF team assignment based on state/region
+function assignNdrfTeam(lat: number, lon: number, state?: string): string {
+    const teams: Record<string, string> = {
+        'Tamil Nadu': '4 NDRF Bn, Arakkonam', 'Kerala': '4 NDRF Bn, Arakkonam',
+        'Andhra Pradesh': '10 NDRF Bn, Vijayawada', 'Telangana': '10 NDRF Bn, Vijayawada',
+        'Karnataka': '5 NDRF Bn, Pune', 'Maharashtra': '5 NDRF Bn, Pune',
+        'Gujarat': '6 NDRF Bn, Vadodara', 'Rajasthan': '6 NDRF Bn, Vadodara',
+        'West Bengal': '2 NDRF Bn, Kolkata', 'Odisha': '3 NDRF Bn, Mundali',
+        'Bihar': '9 NDRF Bn, Patna', 'Jharkhand': '9 NDRF Bn, Patna',
+        'Uttar Pradesh': '8 NDRF Bn, Ghaziabad', 'Delhi': '8 NDRF Bn, Ghaziabad',
+        'Punjab': '7 NDRF Bn, Bhatinda', 'Haryana': '7 NDRF Bn, Bhatinda',
+        'Assam': '1 NDRF Bn, Guwahati', 'Arunachal Pradesh': '12 NDRF Bn, Itanagar',
+    };
+    if(state && teams[state]) return teams[state];
+    // Fallback: assign by lat/lon region
+    if(lat < 15) return '4 NDRF Bn, Arakkonam';
+    if(lat < 20) return '10 NDRF Bn, Vijayawada';
+    if(lat < 25) return '5 NDRF Bn, Pune';
+    return '8 NDRF Bn, Ghaziabad';
+}
+
+// Notify family members (stub — would use SMS/push in production)
+function notifyFamilyMembers(familyId: string, message: string, senderName: string) {
+    const members = db.prepare('SELECT * FROM family_members WHERE familyId = ?').all(familyId) as any[];
+    console.log(`[FAMILY SOS] Notifying ${members.length} members of family ${familyId}: ${message}`);
+    // In production: send SMS via Fast2SMS to each member's phone
+    for(const m of members) {
+        console.log(`  → ${m.memberName} (${m.memberPhone}): "${senderName} sent SOS: ${message}"`);
+    }
+    return members;
+}
+
 // In-memory OTP store
 const otpStore = new Map<string, { otp: string; expiresAt: number; attempts: number }>();
 
@@ -158,7 +265,7 @@ app.get('/health', (_req, res) => {
     const userCount = (db.prepare('SELECT COUNT(*) as c FROM users').get() as any).c;
     res.json({
         status: 'ok',
-        service: 'FloodSense Core API v3.0',
+        service: 'Floody Core API v3.0',
         ai_cortex: AI_CORTEX_URL,
         database: 'sqlite-connected',
         users: userCount,
@@ -206,7 +313,7 @@ app.post('/auth/send-otp', otpLimiter, async (req, res) => {
 });
 
 app.post('/auth/verify-otp', authLimiter, (req, res) => {
-    const { phone, otp, fullName, state, district, role } = req.body;
+    const { phone, otp, fullName, state, district, role, email, homeLat, homeLon, ndrfBattalion, familyMembers } = req.body;
     if(!phone || !otp) return res.status(400).json({ status: 'error', message: 'Phone and OTP required.' });
 
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
@@ -221,17 +328,35 @@ app.post('/auth/verify-otp', authLimiter, (req, res) => {
 
     // Upsert user
     let user = db.prepare('SELECT * FROM users WHERE phone = ?').get(cleanPhone) as any;
+    const familyId = uuid();
     if(!user) {
         const id = uuid();
-        db.prepare('INSERT INTO users (id, phone, fullName, state, district, role) VALUES (?, ?, ?, ?, ?, ?)').run(id, cleanPhone, fullName || null, state || null, district || null, role || 'CITIZEN');
+        db.prepare('INSERT INTO users (id, phone, fullName, email, state, district, role, homeLat, homeLon, ndrfBattalion, familyId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+            id, cleanPhone, fullName || null, email || null, state || null, district || null, role || 'CITIZEN',
+            homeLat || null, homeLon || null, ndrfBattalion || null, familyId
+        );
         user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
-    } else if(fullName || state || district) {
-        db.prepare('UPDATE users SET fullName = COALESCE(?, fullName), state = COALESCE(?, state), district = COALESCE(?, district), updatedAt = datetime("now") WHERE phone = ?').run(fullName || null, state || null, district || null, cleanPhone);
+    } else {
+        db.prepare('UPDATE users SET fullName = COALESCE(?, fullName), email = COALESCE(?, email), state = COALESCE(?, state), district = COALESCE(?, district), homeLat = COALESCE(?, homeLat), homeLon = COALESCE(?, homeLon), ndrfBattalion = COALESCE(?, ndrfBattalion), familyId = COALESCE(familyId, ?), updatedAt = datetime("now") WHERE phone = ?').run(
+            fullName || null, email || null, state || null, district || null, homeLat || null, homeLon || null, ndrfBattalion || null, familyId, cleanPhone
+        );
         user = db.prepare('SELECT * FROM users WHERE phone = ?').get(cleanPhone);
     }
 
+    // Add family members if provided
+    if(Array.isArray(familyMembers) && familyMembers.length > 0) {
+        const fId = user.familyId || familyId;
+        const insert = db.prepare('INSERT OR IGNORE INTO family_members (id, familyId, memberName, memberPhone, relation, specialNeeds) VALUES (?, ?, ?, ?, ?, ?)');
+        for(const fm of familyMembers) {
+            if(fm.name && fm.phone) {
+                insert.run(uuid(), fId, fm.name, fm.phone.replace(/\D/g, '').slice(-10), fm.relation || 'OTHER', fm.specialNeeds || null);
+            }
+        }
+    }
+
     const token = generateToken(user.id, cleanPhone, user.role);
-    res.json({ status: 'success', message: 'OTP verified', token, user });
+    const family = db.prepare('SELECT * FROM family_members WHERE familyId = ?').all(user.familyId || familyId);
+    res.json({ status: 'success', message: 'OTP verified', token, user, familyMembers: family });
 });
 
 app.get('/auth/me', authMiddleware, (req: any, res) => {
@@ -314,19 +439,250 @@ app.post('/risk/calculate', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
-// ─── CITIZEN REPORTS ────────────────────────────────
+// ─── SOS / PANIC BUTTON ─────────────────────────────
+// ═══════════════════════════════════════════════════
+
+app.post('/api/sos', authMiddleware, (req: any, res) => {
+    const { lat, lon, category, message } = req.body;
+    if(!validateLatLon(lat, lon)) return res.status(400).json({ status: 'error', message: 'Valid lat/lon required.' });
+
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId) as any;
+    const team = assignNdrfTeam(lat, lon, user?.state);
+    const id = uuid();
+
+    db.prepare('INSERT INTO sos_alerts (id, userId, familyId, lat, lon, category, message, assignedNdrfTeam) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+        id, req.user.userId, user?.familyId || null, lat, lon, category || 'FLOOD', message || 'EMERGENCY SOS', team
+    );
+
+    const sos = db.prepare('SELECT s.*, u.fullName, u.phone FROM sos_alerts s JOIN users u ON s.userId = u.id WHERE s.id = ?').get(id);
+
+    // Broadcast to NDRF team via WebSocket
+    io.emit('sos_alert', { sos, assignedTeam: team, timestamp: new Date() });
+
+    // If user has family, notify them
+    if(user?.familyId) {
+        notifyFamilyMembers(user.familyId, message || 'EMERGENCY SOS', user.fullName || user.phone);
+    }
+
+    res.status(201).json({ status: 'success', sos, assignedTeam: team });
+});
+
+app.get('/api/sos', (req, res) => {
+    const { status: filterStatus, team, limit: lim } = req.query;
+    const limit = Math.min(100, parseInt(lim as string) || 50);
+    let query = 'SELECT s.*, u.fullName, u.phone FROM sos_alerts s JOIN users u ON s.userId = u.id WHERE 1=1';
+    const params: any[] = [];
+    if(filterStatus) { query += ' AND s.status = ?'; params.push(filterStatus); }
+    if(team) { query += ' AND s.assignedNdrfTeam = ?'; params.push(team); }
+    query += ' ORDER BY s.createdAt DESC LIMIT ?';
+    params.push(limit);
+    const alerts = db.prepare(query).all(...params);
+    res.json({ status: 'success', alerts });
+});
+
+app.patch('/api/sos/:id', authMiddleware, (req: any, res) => {
+    const { status: newStatus } = req.body;
+    if(!['ACTIVE', 'RESPONDING', 'RESOLVED'].includes(newStatus)) return res.status(400).json({ status: 'error', message: 'Invalid status.' });
+    const resolved = newStatus === 'RESOLVED' ? ", resolvedAt = datetime('now')" : '';
+    db.prepare(`UPDATE sos_alerts SET status = ?${resolved} WHERE id = ?`).run(newStatus, req.params.id);
+    const sos = db.prepare('SELECT * FROM sos_alerts WHERE id = ?').get(req.params.id);
+    io.emit('sos_update', { sos });
+    res.json({ status: 'success', sos });
+});
+
+// ═══════════════════════════════════════════════════
+// ─── RELIEF CAMPS ───────────────────────────────────
+// ═══════════════════════════════════════════════════
+
+app.post('/api/camps', authMiddleware, (req: any, res) => {
+    if(req.user.role !== 'NDRF' && req.user.role !== 'AUTHORITY') return res.status(403).json({ status: 'error', message: 'NDRF/Authority access required.' });
+    const { name, lat, lon, capacity, facilities, contactPhone, address } = req.body;
+    if(!name || !validateLatLon(lat, lon)) return res.status(400).json({ status: 'error', message: 'name, lat, lon required.' });
+
+    const id = uuid();
+    db.prepare('INSERT INTO relief_camps (id, name, lat, lon, capacity, facilities, createdBy, contactPhone, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+        id, name, lat, lon, capacity || 100, facilities || null, req.user.userId, contactPhone || null, address || null
+    );
+    res.status(201).json({ status: 'success', camp: db.prepare('SELECT * FROM relief_camps WHERE id = ?').get(id) });
+});
+
+app.get('/api/camps', (req, res) => {
+    const userLat = parseFloat(req.query.lat as string);
+    const userLon = parseFloat(req.query.lon as string);
+    const camps = db.prepare('SELECT * FROM relief_camps WHERE isActive = 1 ORDER BY updatedAt DESC').all() as any[];
+
+    // If user location provided, sort by distance and add distance field
+    if(!isNaN(userLat) && !isNaN(userLon)) {
+        const withDist = camps.map(c => ({
+            ...c,
+            distance_km: Math.round(haversine(userLat, userLon, c.lat, c.lon) * 100) / 100,
+            available_spots: c.capacity - c.currentOccupancy,
+        }));
+        withDist.sort((a, b) => a.distance_km - b.distance_km);
+        return res.json({ status: 'success', camps: withDist });
+    }
+    res.json({ status: 'success', camps });
+});
+
+app.patch('/api/camps/:id', authMiddleware, (req: any, res) => {
+    if(req.user.role !== 'NDRF' && req.user.role !== 'AUTHORITY') return res.status(403).json({ status: 'error', message: 'NDRF/Authority access required.' });
+    const { name, capacity, currentOccupancy, facilities, isActive, contactPhone, address } = req.body;
+    db.prepare('UPDATE relief_camps SET name = COALESCE(?, name), capacity = COALESCE(?, capacity), currentOccupancy = COALESCE(?, currentOccupancy), facilities = COALESCE(?, facilities), isActive = COALESCE(?, isActive), contactPhone = COALESCE(?, contactPhone), address = COALESCE(?, address), updatedAt = datetime("now") WHERE id = ?').run(
+        name || null, capacity || null, currentOccupancy ?? null, facilities || null, isActive ?? null, contactPhone || null, address || null, req.params.id
+    );
+    res.json({ status: 'success', camp: db.prepare('SELECT * FROM relief_camps WHERE id = ?').get(req.params.id) });
+});
+
+// ═══════════════════════════════════════════════════
+// ─── FAMILY ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════
+
+app.get('/api/family/:familyId', authMiddleware, (req: any, res) => {
+    const members = db.prepare('SELECT * FROM family_members WHERE familyId = ?').all(req.params.familyId);
+    res.json({ status: 'success', members });
+});
+
+app.post('/api/family/members', authMiddleware, (req: any, res) => {
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId) as any;
+    if(!user?.familyId) return res.status(400).json({ status: 'error', message: 'No family ID. Complete signup first.' });
+    const { name, phone, relation, specialNeeds } = req.body;
+    if(!name || !phone) return res.status(400).json({ status: 'error', message: 'name and phone required.' });
+    const id = uuid();
+    db.prepare('INSERT INTO family_members (id, familyId, memberName, memberPhone, relation, specialNeeds) VALUES (?, ?, ?, ?, ?, ?)').run(
+        id, user.familyId, name, phone.replace(/\D/g, '').slice(-10), relation || 'OTHER', specialNeeds || null
+    );
+    res.status(201).json({ status: 'success', member: db.prepare('SELECT * FROM family_members WHERE id = ?').get(id) });
+});
+
+app.post('/api/family-sos', authMiddleware, (req: any, res) => {
+    const { message, lat, lon } = req.body;
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId) as any;
+    if(!user?.familyId) return res.status(400).json({ status: 'error', message: 'No family registered.' });
+
+    // Create SOS entry
+    const sosId = uuid();
+    db.prepare('INSERT INTO sos_alerts (id, userId, familyId, lat, lon, category, message, assignedNdrfTeam) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+        sosId, user.id, user.familyId, lat || user.homeLat || 0, lon || user.homeLon || 0, 'FAMILY_SOS', message || 'Family SOS Alert', assignNdrfTeam(lat || 0, lon || 0, user.state)
+    );
+
+    // Notify all family members
+    const members = notifyFamilyMembers(user.familyId, message || 'Family SOS Alert', user.fullName || user.phone);
+
+    io.emit('family_sos', { userId: user.id, familyId: user.familyId, message, members: members.length, timestamp: new Date() });
+    res.json({ status: 'success', notified: members.length, sosId });
+});
+
+// ═══════════════════════════════════════════════════
+// ─── SAFE ROUTE TO CAMP ─────────────────────────────
+// ═══════════════════════════════════════════════════
+
+app.get('/api/routes', (req, res) => {
+    const fromLat = parseFloat(req.query.fromLat as string);
+    const fromLon = parseFloat(req.query.fromLon as string);
+    const toCampId = req.query.toCampId as string;
+
+    if(isNaN(fromLat) || isNaN(fromLon)) return res.status(400).json({ status: 'error', message: 'fromLat, fromLon required.' });
+
+    // Get destination camp
+    let destLat: number, destLon: number, campName: string;
+    if(toCampId) {
+        const camp = db.prepare('SELECT * FROM relief_camps WHERE id = ? AND isActive = 1').get(toCampId) as any;
+        if(!camp) return res.status(404).json({ status: 'error', message: 'Camp not found.' });
+        destLat = camp.lat; destLon = camp.lon; campName = camp.name;
+    } else {
+        // Find nearest active camp
+        const camps = db.prepare('SELECT * FROM relief_camps WHERE isActive = 1').all() as any[];
+        if(camps.length === 0) return res.status(404).json({ status: 'error', message: 'No active camps.' });
+        camps.sort((a, b) => haversine(fromLat, fromLon, a.lat, a.lon) - haversine(fromLat, fromLon, b.lat, b.lon));
+        destLat = camps[0].lat; destLon = camps[0].lon; campName = camps[0].name;
+    }
+
+    const distance = haversine(fromLat, fromLon, destLat, destLon);
+
+    // Check for flooded segments + reports along route
+    const floodedSegments = db.prepare('SELECT * FROM flooded_segments WHERE isActive = 1').all() as any[];
+    const floodReports = db.prepare("SELECT * FROM citizen_reports WHERE reportType IN ('FLOOD', 'ROAD_BLOCK') AND status != 'RESOLVED' AND createdAt > datetime('now', '-24 hours')").all() as any[];
+
+    // Calculate route risk score (0-10)
+    let riskScore = 0;
+    let floodedNearRoute = 0;
+    const allHazards = [
+        ...floodedSegments.map(s => ({ lat: s.lat, lon: s.lon, severity: s.severity })),
+        ...floodReports.map(r => ({ lat: r.lat, lon: r.lon, severity: r.severity }))
+    ];
+
+    // Check each hazard for proximity to the direct route
+    for(const h of allHazards) {
+        const distToStart = haversine(fromLat, fromLon, h.lat, h.lon);
+        const distToEnd = haversine(destLat, destLon, h.lat, h.lon);
+        // If hazard is near the route corridor (within 2km of either endpoint or midpoint)
+        if(distToStart < 2 || distToEnd < 2 || distToStart + distToEnd < distance * 1.5) {
+            floodedNearRoute++;
+            riskScore += h.severity === 'SEVERE' ? 3 : h.severity === 'HIGH' ? 2 : 1;
+        }
+    }
+    riskScore = Math.min(10, riskScore);
+
+    // Generate route polyline (direct path with intermediate points)
+    const steps = 10;
+    const coordinates = Array.from({ length: steps + 1 }, (_, i) => ([
+        fromLat + (destLat - fromLat) * (i / steps),
+        fromLon + (destLon - fromLon) * (i / steps)
+    ]));
+
+    const eta = Math.round(distance / 30 * 60); // ~30km/h average speed
+
+    res.json({
+        status: 'success',
+        route: {
+            from: { lat: fromLat, lon: fromLon },
+            to: { lat: destLat, lon: destLon, name: campName },
+            distance_km: Math.round(distance * 100) / 100,
+            eta_minutes: eta,
+            risk_score: riskScore,
+            risk_level: riskScore > 7 ? 'HIGH' : riskScore > 4 ? 'MODERATE' : 'LOW',
+            flooded_segments_nearby: floodedNearRoute,
+            coordinates,
+            warning: riskScore > 5 ? 'Route passes through reported flood zones. Consider alternative transport.' : null,
+        }
+    });
+});
+
+// ═══════════════════════════════════════════════════
+// ─── CITIZEN REPORTS (enhanced with photo base64) ──
 // ═══════════════════════════════════════════════════
 
 app.post('/api/reports', authMiddleware, (req: any, res) => {
-    const { reportType, description, lat, lon, photoUrl, severity } = req.body;
+    const { reportType, description, lat, lon, photoBase64, photoUrl, severity } = req.body;
     if(!reportType || !description) return res.status(400).json({ status: 'error', message: 'reportType and description required.' });
     if(!validateLatLon(lat, lon)) return res.status(400).json({ status: 'error', message: 'Valid lat/lon required.' });
-    const validTypes = ['FLOOD', 'DRAIN_BLOCK', 'ROAD_BLOCK', 'RESCUE_NEEDED', 'DAM_OVERFLOW', 'LANDSLIDE', 'OTHER'];
+    const validTypes = ['FLOOD', 'DRAIN_BLOCK', 'ROAD_BLOCK', 'RESCUE_NEEDED', 'DAM_OVERFLOW', 'LANDSLIDE', 'WATERLOGGING', 'OTHER'];
     if(!validTypes.includes(reportType)) return res.status(400).json({ status: 'error', message: `Invalid type. Use: ${validTypes.join(', ')}` });
 
+    // Handle base64 photo upload
+    let savedPhotoUrl = photoUrl || null;
+    if(photoBase64) {
+        try {
+            const matches = photoBase64.match(/^data:image\/(\w+);base64,(.+)$/);
+            if(matches) {
+                const ext = matches[1];
+                const data = Buffer.from(matches[2], 'base64');
+                const fileName = `${uuid()}.${ext}`;
+                fs.writeFileSync(path.join(UPLOADS_DIR, fileName), data);
+                savedPhotoUrl = `/uploads/${fileName}`;
+            }
+        } catch(e) { console.error('[UPLOAD]', e); }
+    }
+
     const id = uuid();
-    db.prepare('INSERT INTO citizen_reports (id, userId, reportType, description, lat, lon, photoUrl, severity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, req.user.userId, reportType, description, lat, lon, photoUrl || null, severity || 'MODERATE');
-    const report = db.prepare('SELECT * FROM citizen_reports WHERE id = ?').get(id);
+    db.prepare('INSERT INTO citizen_reports (id, userId, reportType, description, lat, lon, photoUrl, severity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, req.user.userId, reportType, description, lat, lon, savedPhotoUrl, severity || 'MODERATE');
+
+    // Auto-create flooded segment from FLOOD/WATERLOGGING reports
+    if(['FLOOD', 'WATERLOGGING', 'ROAD_BLOCK'].includes(reportType)) {
+        db.prepare('INSERT INTO flooded_segments (id, lat, lon, severity, reportId) VALUES (?, ?, ?, ?, ?)').run(uuid(), lat, lon, severity || 'MODERATE', id);
+    }
+
+    const report = db.prepare('SELECT cr.*, u.fullName FROM citizen_reports cr JOIN users u ON cr.userId = u.id WHERE cr.id = ?').get(id);
     io.emit('new_report', { report, timestamp: new Date() });
     res.status(201).json({ status: 'success', report });
 });
@@ -336,12 +692,15 @@ app.get('/api/reports', (req, res) => {
     const limit = Math.min(50, parseInt(req.query.limit as string) || 20);
     const offset = (page - 1) * limit;
     const status = req.query.status as string;
+    const reportType = req.query.type as string;
 
-    const where = status ? 'WHERE cr.status = ?' : '';
-    const params = status ? [status] : [];
+    let where = 'WHERE 1=1';
+    const params: any[] = [];
+    if(status) { where += ' AND cr.status = ?'; params.push(status); }
+    if(reportType) { where += ' AND cr.reportType = ?'; params.push(reportType); }
 
-    const reports = db.prepare(`SELECT cr.*, u.fullName, u.district as userDistrict FROM citizen_reports cr LEFT JOIN users u ON cr.userId = u.id ${where} ORDER BY cr.createdAt DESC LIMIT ? OFFSET ?`).all(...params, limit, offset);
-    const total = (db.prepare(`SELECT COUNT(*) as c FROM citizen_reports ${status ? 'WHERE status = ?' : ''}`).get(...params) as any).c;
+    const reports = db.prepare(`SELECT cr.*, u.fullName, u.phone as reporterPhone, u.district as userDistrict FROM citizen_reports cr LEFT JOIN users u ON cr.userId = u.id ${where} ORDER BY cr.createdAt DESC LIMIT ? OFFSET ?`).all(...params, limit, offset);
+    const total = (db.prepare(`SELECT COUNT(*) as c FROM citizen_reports cr ${where}`).get(...params) as any).c;
     res.json({ status: 'success', reports, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
 });
 
@@ -352,12 +711,16 @@ app.post('/api/reports/:id/upvote', authMiddleware, (req: any, res) => {
     res.json({ status: 'success', upvotes: report.upvotes });
 });
 
-app.patch('/api/reports/:id/status', authMiddleware, (req: any, res) => {
-    if(req.user.role !== 'AUTHORITY') return res.status(403).json({ status: 'error', message: 'Authority access required.' });
-    const { status: newStatus } = req.body;
-    if(!['PENDING', 'ACKNOWLEDGED', 'RESOLVED'].includes(newStatus)) return res.status(400).json({ status: 'error', message: 'Invalid status.' });
-    const result = db.prepare('UPDATE citizen_reports SET status = ?, updatedAt = datetime("now") WHERE id = ?').run(newStatus, req.params.id);
-    if(result.changes === 0) return res.status(404).json({ status: 'error', message: 'Report not found.' });
+app.patch('/api/reports/:id', authMiddleware, (req: any, res) => {
+    const { status: newStatus, assignedVolunteerId } = req.body;
+    if(newStatus && !['PENDING', 'ACKNOWLEDGED', 'IN_PROGRESS', 'RESOLVED'].includes(newStatus)) return res.status(400).json({ status: 'error', message: 'Invalid status.' });
+    db.prepare('UPDATE citizen_reports SET status = COALESCE(?, status), assignedVolunteerId = COALESCE(?, assignedVolunteerId), updatedAt = datetime("now") WHERE id = ?').run(newStatus || null, assignedVolunteerId || null, req.params.id);
+
+    // If resolved, deactivate related flooded segment
+    if(newStatus === 'RESOLVED') {
+        db.prepare('UPDATE flooded_segments SET isActive = 0 WHERE reportId = ?').run(req.params.id);
+    }
+
     const report = db.prepare('SELECT * FROM citizen_reports WHERE id = ?').get(req.params.id);
     io.emit('report_status_update', { report });
     res.json({ status: 'success', report });
@@ -517,15 +880,15 @@ app.use((err: any, _req: any, res: any, _next: any) => {
 
 // ─── Start ──────────────────────────────────────────
 server.listen(PORT, () => {
-    console.log(`╔══════════════════════════════════════════╗`);
-    console.log(`║  FloodSense API Server v3.0              ║`);
-    console.log(`║  Port: ${String(PORT).padEnd(33)}║`);
-    console.log(`║  AI Cortex: ${AI_CORTEX_URL.slice(0, 28).padEnd(28)}║`);
-    console.log(`║  Database: SQLite (data/floodsense.db)   ║`);
-    console.log(`║  SMS: ${(FAST2SMS_API_KEY ? 'Fast2SMS ✓' : 'Demo Mode').padEnd(34)}║`);
-    console.log(`║  Auth: JWT (7-day tokens)                ║`);
-    console.log(`║  Rate Limit: 200/15min global            ║`);
-    console.log(`╚══════════════════════════════════════════╝`);
+    console.log(`╔══════════════════════════════════════════════╗`);
+    console.log(`║  Floody API Server v4.0                      ║`);
+    console.log(`║  Port: ${String(PORT).padEnd(38)}║`);
+    console.log(`║  Database: SQLite (data/floodsense.db)       ║`);
+    console.log(`║  Features: SOS, Camps, Family, Reports,      ║`);
+    console.log(`║            Routes, Analytics, Telemetry       ║`);
+    console.log(`║  Auth: JWT (7-day tokens)                    ║`);
+    console.log(`║  Rate Limit: 200/15min global                ║`);
+    console.log(`╚══════════════════════════════════════════════╝`);
 });
 
 // Graceful shutdown

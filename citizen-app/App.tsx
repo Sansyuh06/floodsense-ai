@@ -8,7 +8,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>FloodSense</Text>
+        <Text style={styles.title}>Floody</Text>
         <View style={styles.meshToggle}>
           <Text style={styles.meshText}>Mesh Fallback</Text>
           <Switch value={meshEnabled} onValueChange={setMeshEnabled} />

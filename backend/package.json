@@ -1,7 +1,7 @@
 {
   "name": "floodsense-backend",
   "version": "2.0.0",
-  "description": "FloodSense-AI Backend API Server",
+  "description": "Floody Backend API Server",
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node index.ts",
@@ -18,7 +18,7 @@
     "india",
     "ndrf"
   ],
-  "author": "FloodSense Team",
+  "author": "Floody Team",
   "license": "MIT",
   "dependencies": {
     "@prisma/client": "^7.4.1",
