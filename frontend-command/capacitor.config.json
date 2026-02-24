@@ -1,0 +1,8 @@
+{
+    "appId": "com.floody.app",
+    "appName": "Floody",
+    "webDir": "out",
+    "server": {
+        "androidScheme": "https"
+    }
+}

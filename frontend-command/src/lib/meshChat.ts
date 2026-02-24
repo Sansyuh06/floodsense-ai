@@ -134,20 +134,9 @@ export function startMesh(onMessage: (msg: MeshMessage) => void): MeshState {
         channel.postMessage(announce);
     }
 
-    // Load default messages if none exist
+    // Load any existing real messages from storage
     const existing = getMessages();
-    if(existing.length === 0) {
-        const defaults: MeshMessage[] = [
-            { id: genMsgId(), senderId: "FM-NDRF1", senderName: "NDRF Control", channelId: CHANNEL_GLOBAL, ttl: 0, hops: 2, via: ["FM-NDRF1", "FM-REL01"], type: "ALERT", payload: "⚠️ Flash flood warning for low-lying areas. Evacuate immediately.", timestamp: Date.now() - 600000 },
-            { id: genMsgId(), senderId: "FM-CIT01", senderName: "Ramesh (Patna)", channelId: CHANNEL_GLOBAL, ttl: 0, hops: 1, via: ["FM-CIT01"], type: "TEXT", payload: "Water rising fast near Gandak bridge. Roads blocked.", timestamp: Date.now() - 480000 },
-            { id: genMsgId(), senderId: "FM-CIT02", senderName: "Priya (Chennai)", channelId: CHANNEL_GLOBAL, ttl: 0, hops: 3, via: ["FM-CIT02", "FM-REL02", "FM-REL03"], type: "SOS", payload: "🚨 Family stuck on rooftop, 3 people including child. Need rescue boat.", timestamp: Date.now() - 360000 },
-            { id: genMsgId(), senderId: "FM-VOL01", senderName: "Relief Camp 4", channelId: CHANNEL_GLOBAL, ttl: 0, hops: 1, via: ["FM-VOL01"], type: "TEXT", payload: "Camp has space for 200 more. Food and water available. Location: 13.05°N, 80.25°E", timestamp: Date.now() - 240000 },
-            { id: genMsgId(), senderId: "FM-CIT03", senderName: "Ahmed (Wayanad)", channelId: CHANNEL_GLOBAL, ttl: 0, hops: 2, via: ["FM-CIT03", "FM-REL04"], type: "LOCATION", payload: "Landslide blocked NH-766. Use alternate route via Sulthan Bathery.", timestamp: Date.now() - 120000 },
-        ];
-        defaults.forEach(m => { saveMessage(m); onMessage(m); });
-    } else {
-        existing.forEach(m => onMessage(m));
-    }
+    existing.forEach(m => onMessage(m));
 
     return { nodeId, nickname, isActive: true, peerCount: 0, messagesRelayed: 0 };
 }

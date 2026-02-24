@@ -121,13 +121,7 @@ export default function CitizenDashboard({ onLogout, userState, userDistrict }: 
         return `https://www.openstreetmap.org/export/embed.html?bbox=${userDistrict.lng - 0.5},${userDistrict.lat - 0.5},${userDistrict.lng + 0.5},${userDistrict.lat + 0.5}&layer=mapnik&marker=${userDistrict.lat},${userDistrict.lng}`;
     };
 
-    // Shelter data (with coordinates for navigation)
-    const shelters = [
-        { n: `${userDistrict.name} Relief Camp`, d: "2.1 km", c: 500, a: 187, s: "Open", lat: userDistrict.lat + 0.01, lon: userDistrict.lng + 0.015 },
-        { n: "Community Hall - Block A", d: "3.4 km", c: 300, a: 92, s: "Open", lat: userDistrict.lat - 0.015, lon: userDistrict.lng + 0.02 },
-        { n: "Stadium Emergency Shelter", d: "5.8 km", c: 1200, a: 640, s: "Open", lat: userDistrict.lat + 0.025, lon: userDistrict.lng - 0.02 },
-        { n: "Temple Complex Shelter", d: "1.8 km", c: 150, a: 0, s: "Full", lat: userDistrict.lat - 0.008, lon: userDistrict.lng - 0.01 },
-    ];
+    // Relief camps are fetched from the real backend API via fetchCamps()
 
     const GovHeader = ({ title, showBack }: { title?: string; showBack?: boolean }) => (
         <div className="w-full">
@@ -154,7 +148,8 @@ export default function CitizenDashboard({ onLogout, userState, userDistrict }: 
 
     // ─── EVACUATE (with map) ───
     if(view === "evacuate") {
-        const dest = navTarget ? { lat: navTarget.lat, lon: navTarget.lon, label: navTarget.name } : { lat: shelters[0].lat, lon: shelters[0].lon, label: shelters[0].n };
+        const firstCamp = reliefCamps[0];
+        const dest = navTarget ? { lat: navTarget.lat, lon: navTarget.lon, label: navTarget.name } : firstCamp ? { lat: firstCamp.lat, lon: firstCamp.lon, label: firstCamp.name } : { lat: userDistrict.lat + 0.01, lon: userDistrict.lng + 0.015, label: `${userDistrict.name} Relief Camp` };
         return (
             <div className="min-h-screen bg-[#f5f5f0]"><GovHeader title={t(language, "evacuation_route")} showBack />
                 <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
@@ -191,13 +186,15 @@ export default function CitizenDashboard({ onLogout, userState, userDistrict }: 
                     <iframe src={getVulnMapEmbed()} className="w-full h-36 border-0" loading="lazy" title="Area Map" />
                     <p className="text-[10px] text-gray-400 px-3 py-1.5">📍 {t(language, "shelters_near")} {userDistrict.name}</p>
                 </div>
-                {shelters.map((sh, i) => <div key={i} className={`bg-white border rounded-lg p-4 ${sh.s === "Full" ? "border-red-200 opacity-60" : "border-gray-200"}`}>
-                    <div className="flex items-center justify-between mb-2"><h3 className="text-sm font-bold text-gray-800">{sh.n}</h3><span className={`text-[10px] px-2 py-0.5 rounded font-bold border ${sh.s === "Full" ? "bg-red-50 text-red-600 border-red-200" : "bg-green-50 text-green-700 border-green-200"}`}>{sh.s === "Open" ? t(language, "open") : t(language, "full")}</span></div>
-                    <div className="flex gap-4 text-xs text-gray-500"><span>📍 {sh.d}</span><span>👥 {sh.a}/{sh.c}</span></div>
-                    {sh.s !== "Full" && <div className="flex gap-2 mt-3">
-                        <button onClick={() => { setNavTarget({ name: sh.n, lat: sh.lat, lon: sh.lon }); setView("evacuate") }} className="flex-1 text-xs font-bold bg-[#1a237e] text-white py-2 rounded hover:bg-[#283593] flex items-center justify-center gap-1"><Navigation className="w-3.5 h-3.5" />{t(language, "navigate_here")}</button>
-                        <a href={getNavUrl(sh.lat, sh.lon)} target="_blank" rel="noopener noreferrer" className="text-xs font-bold border border-gray-200 text-gray-600 py-2 px-3 rounded hover:border-[#1a237e] flex items-center gap-1"><ExternalLink className="w-3.5 h-3.5" />{t(language, "maps")}</a>
-                    </div>}
+                {reliefCamps.length === 0 && !loadingCamps && <div className="text-center py-8 text-gray-400 text-sm">No relief camps found nearby. Try refreshing.</div>}
+                {loadingCamps && <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin text-[#1a237e] mx-auto" /></div>}
+                {reliefCamps.map((camp: any, i: number) => <div key={i} className={`bg-white border rounded-lg p-4 border-gray-200`}>
+                    <div className="flex items-center justify-between mb-2"><h3 className="text-sm font-bold text-gray-800">{camp.name}</h3><span className={`text-[10px] px-2 py-0.5 rounded font-bold border bg-green-50 text-green-700 border-green-200`}>{t(language, "open")}</span></div>
+                    <div className="flex gap-4 text-xs text-gray-500"><span>📍 {camp.distance_km ? `${camp.distance_km.toFixed(1)} km` : '—'}</span><span>👥 {camp.capacity || '—'}</span></div>
+                    <div className="flex gap-2 mt-3">
+                        <button onClick={() => { setNavTarget({ name: camp.name, lat: camp.lat, lon: camp.lon }); setView("evacuate") }} className="flex-1 text-xs font-bold bg-[#1a237e] text-white py-2 rounded hover:bg-[#283593] flex items-center justify-center gap-1"><Navigation className="w-3.5 h-3.5" />{t(language, "navigate_here")}</button>
+                        <a href={getNavUrl(camp.lat, camp.lon)} target="_blank" rel="noopener noreferrer" className="text-xs font-bold border border-gray-200 text-gray-600 py-2 px-3 rounded hover:border-[#1a237e] flex items-center gap-1"><ExternalLink className="w-3.5 h-3.5" />{t(language, "maps")}</a>
+                    </div>
                 </div>)}
             </div>
         </div>

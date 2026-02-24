@@ -7,7 +7,7 @@ import { useRealtime, type RealtimeEvent } from '@/lib/useRealtime';
 import { Bell } from 'lucide-react';
 import {
     AlertTriangle, Activity, Layers, Radio, Shield, LogOut, Loader2, RefreshCw,
-    Droplets, Heart, Building, BarChart3, Play, Pause, RotateCcw, FileText, CheckCircle, Clock, Eye
+    Droplets, Heart, Building, BarChart3, FileText, CheckCircle, Clock, Eye
 } from 'lucide-react';
 import { fetchRiskPrediction, fetchBulkRisk, type BulkRiskResult } from '@/lib/api';
 import { STATES_DATA, getAllDams, getDangerDams, getVulnerableDistricts, type DamData } from '@/data/statesData';
@@ -37,17 +37,11 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
     const [zoneCount, setZoneCount] = useState(0);
     const [loadingBulk, setLoadingBulk] = useState(false);
     const [riskData, setRiskData] = useState<BulkRiskResult[]>([]);
-    const [activeTab, setActiveTab] = useState<'telemetry' | 'dams' | 'vulnerability' | 'simulation' | 'reports' | 'live'>('live');
+    const [activeTab, setActiveTab] = useState<'telemetry' | 'dams' | 'vulnerability' | 'reports' | 'live'>('live');
     // Real-time WebSocket connection
     const { connected: wsConnected, events: liveEvents, sosCount, reportCount, clearEvents, latestSOS } = useRealtime(true);
     const [citizenReports, setCitizenReports] = useState<CitizenReport[]>([]);
     const [reportStats, setReportStats] = useState(getReportStats());
-    // Flood simulation state
-    const [simRunning, setSimRunning] = useState(false);
-    const [simHour, setSimHour] = useState(0);
-    const [simScenario, setSimScenario] = useState<'rain' | 'dam' | 'surge'>('rain');
-    // Evacuation progress
-    const [evacProgress, setEvacProgress] = useState({ total: 12500, evacuated: 3200, inTransit: 1800, sheltered: 2800 });
 
     const tileStyles: Record<string, string> = {
         light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
@@ -205,24 +199,7 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
 
     // Socket.IO connection is handled by useRealtime hook above
 
-    // Flood simulation
-    useEffect(() => {
-        if(!simRunning) return;
-        const interval = setInterval(() => {
-            setSimHour(prev => {
-                if(prev >= 48) { setSimRunning(false); return 48; }
-                // Simulate evacuation progress
-                setEvacProgress(p => ({
-                    total: p.total,
-                    evacuated: Math.min(p.total, p.evacuated + Math.floor(Math.random() * 200 + 100)),
-                    inTransit: Math.max(0, Math.floor(Math.random() * 500)),
-                    sheltered: Math.min(p.total, p.sheltered + Math.floor(Math.random() * 150 + 50)),
-                }));
-                return prev + 1;
-            });
-        }, 800);
-        return () => clearInterval(interval);
-    }, [simRunning]);
+
 
     const switchStyle = (style: 'light' | 'dark' | 'satellite') => {
         setMapStyle(style);
@@ -310,7 +287,6 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                         { id: 'telemetry' as const, icon: <Radio className="w-3 h-3" />, label: 'Telem', badge: 0 },
                         { id: 'dams' as const, icon: <Droplets className="w-3 h-3" />, label: 'Dams', badge: 0 },
                         { id: 'vulnerability' as const, icon: <Heart className="w-3 h-3" />, label: 'Vuln', badge: 0 },
-                        { id: 'simulation' as const, icon: <BarChart3 className="w-3 h-3" />, label: 'Sim', badge: 0 },
                         { id: 'reports' as const, icon: <FileText className="w-3 h-3" />, label: 'Rpts', badge: 0 },
                     ]).map(tab => (
                         <button key={tab.id} onClick={() => { setActiveTab(tab.id); if(tab.id === 'live') clearEvents(); }}
@@ -431,69 +407,6 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                             ))}
                         </div>
                     )}
-                    {activeTab === 'simulation' && (
-                        <div className="space-y-3">
-                            {/* Scenario Selection */}
-                            <div>
-                                <h3 className="text-[10px] font-bold text-gray-500 uppercase mb-1">Scenario</h3>
-                                <div className="flex gap-1">
-                                    {([
-                                        { id: 'rain', label: '🌧️ Heavy Rain' },
-                                        { id: 'dam', label: '🏗️ Dam Release' },
-                                        { id: 'surge', label: '🌊 Storm Surge' },
-                                    ] as const).map(s => (
-                                        <button key={s.id} onClick={() => setSimScenario(s.id)}
-                                            className={`flex-1 text-[10px] py-1.5 rounded border font-bold ${simScenario === s.id ? 'bg-[#1a237e] text-white border-[#1a237e]' : 'bg-white text-gray-600 border-gray-200'}`}>
-                                            {s.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            {/* Simulation Controls */}
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[11px] font-bold text-gray-700">Hour: {simHour}/48</span>
-                                    <div className="flex gap-1">
-                                        <button onClick={() => { setSimRunning(!simRunning); }} className={`p-1.5 rounded ${simRunning ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                                            {simRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                                        </button>
-                                        <button onClick={() => { setSimRunning(false); setSimHour(0); setEvacProgress({ total: 12500, evacuated: 3200, inTransit: 1800, sheltered: 2800 }); }} className="p-1.5 rounded bg-gray-100 text-gray-600">
-                                            <RotateCcw className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
-                                    <div className="bg-[#1a237e] h-full rounded-full transition-all" style={{ width: `${(simHour / 48) * 100}%` }} />
-                                </div>
-                                <div className="grid grid-cols-3 gap-1 mt-2 text-[9px] text-center">
-                                    <div className="bg-white border border-gray-100 rounded p-1"><span className="text-gray-400">Rainfall</span><br /><span className="font-bold text-blue-600">{Math.min(400, simHour * 8)}mm</span></div>
-                                    <div className="bg-white border border-gray-100 rounded p-1"><span className="text-gray-400">Water Rise</span><br /><span className="font-bold text-red-600">+{(simHour * 0.15).toFixed(1)}m</span></div>
-                                    <div className="bg-white border border-gray-100 rounded p-1"><span className="text-gray-400">Zones hit</span><br /><span className="font-bold text-orange-600">{Math.min(12, Math.floor(simHour / 4))}</span></div>
-                                </div>
-                            </div>
-                            {/* Evacuation Progress */}
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                <h3 className="text-[10px] font-bold text-gray-500 uppercase mb-2">Evacuation Progress</h3>
-                                <div className="space-y-2">
-                                    {[
-                                        { label: "Evacuated", value: evacProgress.evacuated, color: "bg-green-500" },
-                                        { label: "In Transit", value: evacProgress.inTransit, color: "bg-yellow-500" },
-                                        { label: "Sheltered", value: evacProgress.sheltered, color: "bg-blue-500" },
-                                    ].map(e => (
-                                        <div key={e.label}>
-                                            <div className="flex items-center justify-between text-[10px]">
-                                                <span className="text-gray-600">{e.label}</span>
-                                                <span className="font-bold text-gray-800">{e.value.toLocaleString()}/{evacProgress.total.toLocaleString()}</span>
-                                            </div>
-                                            <div className="bg-gray-200 rounded-full h-1.5 mt-0.5 overflow-hidden">
-                                                <div className={`${e.color} h-full rounded-full`} style={{ width: `${(e.value / evacProgress.total) * 100}%` }} />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
                     {activeTab === 'reports' && (
                         <div className="space-y-2">
                             {/* Stats */}
@@ -582,14 +495,6 @@ export default function MapDashboard({ onLogout }: { onLogout?: () => void }) {
                         <p>🔄 Auto-refresh: 10 min</p>
                     </div>
                 </div>
-                {/* Simulation overlay */}
-                {simRunning && (
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/95 rounded-lg px-6 py-3 border border-gray-200 shadow-md flex items-center gap-4 z-20">
-                        <span className="text-xs font-bold text-[#1a237e]">🎬 Simulation Running</span>
-                        <span className="text-xs text-gray-600">Hour {simHour}/48 · {simScenario === 'rain' ? '🌧️ Heavy Rain' : simScenario === 'dam' ? '🏗️ Dam Release' : '🌊 Storm Surge'}</span>
-                        <span className="text-xs text-red-600 font-bold">+{(simHour * 0.15).toFixed(1)}m water</span>
-                    </div>
-                )}
             </div>
         </div>
     );
