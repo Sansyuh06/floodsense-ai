@@ -4,10 +4,7 @@ import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
-  migrations: {
-    path: "prisma/migrations",
-  },
   datasource: {
-    url: `file:${path.join(__dirname, "prisma", "floodsense.db")}`,
+    url: process.env.DATABASE_URL || `file:${path.resolve(__dirname, "prisma", "floodsense.db")}`,
   },
 });
