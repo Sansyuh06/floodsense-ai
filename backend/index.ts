@@ -337,7 +337,7 @@ app.post('/auth/verify-otp', authLimiter, (req, res) => {
         );
         user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
     } else {
-        db.prepare('UPDATE users SET fullName = COALESCE(?, fullName), email = COALESCE(?, email), state = COALESCE(?, state), district = COALESCE(?, district), homeLat = COALESCE(?, homeLat), homeLon = COALESCE(?, homeLon), ndrfBattalion = COALESCE(?, ndrfBattalion), familyId = COALESCE(familyId, ?), updatedAt = datetime("now") WHERE phone = ?').run(
+        db.prepare(`UPDATE users SET fullName = COALESCE(?, fullName), email = COALESCE(?, email), state = COALESCE(?, state), district = COALESCE(?, district), homeLat = COALESCE(?, homeLat), homeLon = COALESCE(?, homeLon), ndrfBattalion = COALESCE(?, ndrfBattalion), familyId = COALESCE(familyId, ?), updatedAt = datetime('now') WHERE phone = ?`).run(
             fullName || null, email || null, state || null, district || null, homeLat || null, homeLon || null, ndrfBattalion || null, familyId, cleanPhone
         );
         user = db.prepare('SELECT * FROM users WHERE phone = ?').get(cleanPhone);
@@ -527,7 +527,7 @@ app.get('/api/camps', (req, res) => {
 app.patch('/api/camps/:id', authMiddleware, (req: any, res) => {
     if(req.user.role !== 'NDRF' && req.user.role !== 'AUTHORITY') return res.status(403).json({ status: 'error', message: 'NDRF/Authority access required.' });
     const { name, capacity, currentOccupancy, facilities, isActive, contactPhone, address } = req.body;
-    db.prepare('UPDATE relief_camps SET name = COALESCE(?, name), capacity = COALESCE(?, capacity), currentOccupancy = COALESCE(?, currentOccupancy), facilities = COALESCE(?, facilities), isActive = COALESCE(?, isActive), contactPhone = COALESCE(?, contactPhone), address = COALESCE(?, address), updatedAt = datetime("now") WHERE id = ?').run(
+    db.prepare(`UPDATE relief_camps SET name = COALESCE(?, name), capacity = COALESCE(?, capacity), currentOccupancy = COALESCE(?, currentOccupancy), facilities = COALESCE(?, facilities), isActive = COALESCE(?, isActive), contactPhone = COALESCE(?, contactPhone), address = COALESCE(?, address), updatedAt = datetime('now') WHERE id = ?`).run(
         name || null, capacity || null, currentOccupancy ?? null, facilities || null, isActive ?? null, contactPhone || null, address || null, req.params.id
     );
     res.json({ status: 'success', camp: db.prepare('SELECT * FROM relief_camps WHERE id = ?').get(req.params.id) });
@@ -714,7 +714,7 @@ app.post('/api/reports/:id/upvote', authMiddleware, (req: any, res) => {
 app.patch('/api/reports/:id', authMiddleware, (req: any, res) => {
     const { status: newStatus, assignedVolunteerId } = req.body;
     if(newStatus && !['PENDING', 'ACKNOWLEDGED', 'IN_PROGRESS', 'RESOLVED'].includes(newStatus)) return res.status(400).json({ status: 'error', message: 'Invalid status.' });
-    db.prepare('UPDATE citizen_reports SET status = COALESCE(?, status), assignedVolunteerId = COALESCE(?, assignedVolunteerId), updatedAt = datetime("now") WHERE id = ?').run(newStatus || null, assignedVolunteerId || null, req.params.id);
+    db.prepare(`UPDATE citizen_reports SET status = COALESCE(?, status), assignedVolunteerId = COALESCE(?, assignedVolunteerId), updatedAt = datetime('now') WHERE id = ?`).run(newStatus || null, assignedVolunteerId || null, req.params.id);
 
     // If resolved, deactivate related flooded segment
     if(newStatus === 'RESOLVED') {

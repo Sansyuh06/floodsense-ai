@@ -49,6 +49,9 @@ export default function CitizenDashboard({ onLogout, userState, userDistrict }: 
     }, []);
 
     useEffect(() => {
+        // Show cached data instantly while fresh data loads
+        try { const c = localStorage.getItem('floody_cached_risk'); if(c) { const cached = JSON.parse(c); setLiveRisk(cached); if(cached.alerts) setLiveAlerts(cached.alerts); setLoadingRisk(false); } } catch { }
+
         async function load() {
             try {
                 const data = await fetchRiskPrediction(userDistrict.lat, userDistrict.lng, userDistrict.name, userState.name);

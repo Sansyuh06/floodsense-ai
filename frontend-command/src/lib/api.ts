@@ -5,6 +5,14 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 const AI_CORTEX_BASE = process.env.NEXT_PUBLIC_AI_CORTEX_URL || 'http://localhost:8000';
+const FETCH_TIMEOUT = 8000; // 8 seconds max per request
+
+/** Fetch with automatic timeout to prevent hanging */
+function fetchWithTimeout(url: string, opts: RequestInit = {}, timeout = FETCH_TIMEOUT): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
 
 // ─── Types ──────────────────────────────────────────
 
@@ -92,7 +100,7 @@ export async function fetchRiskPrediction(
 ): Promise<RiskPrediction> {
     // Try backend first
     try {
-        const resp = await fetch(`${API_BASE}/risk/calculate`, {
+        const resp = await fetchWithTimeout(`${API_BASE}/risk/calculate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -110,7 +118,7 @@ export async function fetchRiskPrediction(
 
     // Fallback: call AI Cortex directly
     try {
-        const resp = await fetch(`${AI_CORTEX_BASE}/predict`, {
+        const resp = await fetchWithTimeout(`${AI_CORTEX_BASE}/predict`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -159,7 +167,7 @@ export async function fetchRiskPrediction(
  */
 export async function fetchWeatherDirect(lat: number, lon: number): Promise<WeatherData> {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m&hourly=precipitation,soil_moisture_0_to_1cm&daily=precipitation_sum&timezone=Asia/Kolkata&past_days=7&forecast_days=3`;
-    const resp = await fetch(url);
+    const resp = await fetchWithTimeout(url);
     const data = await resp.json();
 
     const current = data.current || {};
@@ -198,7 +206,7 @@ export async function fetchWeatherDirect(lat: number, lon: number): Promise<Weat
  */
 export async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
     try {
-        const resp = await fetch(`${API_BASE}/api/weather/${lat}/${lon}`);
+        const resp = await fetchWithTimeout(`${API_BASE}/api/weather/${lat}/${lon}`);
         const json = await resp.json();
         return json.data || json;
     } catch {
@@ -211,7 +219,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherDat
  */
 export async function fetchAlerts(lat: number, lon: number): Promise<FloodAlert[]> {
     try {
-        const resp = await fetch(`${API_BASE}/api/alerts/${lat}/${lon}`);
+        const resp = await fetchWithTimeout(`${API_BASE}/api/alerts/${lat}/${lon}`);
         const json = await resp.json();
         return json.alerts || [];
     } catch {
@@ -226,11 +234,11 @@ export async function fetchBulkRisk(
     locations: Array<{ lat: number; lon: number; district_name?: string; state_name?: string }>
 ): Promise<BulkRiskResult[]> {
     try {
-        const resp = await fetch(`${API_BASE}/api/predict/bulk`, {
+        const resp = await fetchWithTimeout(`${API_BASE}/api/predict/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ locations }),
-        });
+        }, 15000); // 15s for bulk requests
         const json = await resp.json();
         return json.results || [];
     } catch {
@@ -249,7 +257,7 @@ function authHeaders() {
 
 // ─── SOS / Panic Button ────────────────────────────
 export async function createSOS(lat: number, lon: number, category?: string, message?: string) {
-    const resp = await fetch(`${API_BASE}/api/sos`, {
+    const resp = await fetchWithTimeout(`${API_BASE}/api/sos`, {
         method: 'POST', headers: authHeaders(),
         body: JSON.stringify({ lat, lon, category: category || 'FLOOD', message: message || 'EMERGENCY SOS' }),
     });
@@ -260,12 +268,12 @@ export async function fetchSOSAlerts(status?: string, team?: string) {
     const params = new URLSearchParams();
     if(status) params.set('status', status);
     if(team) params.set('team', team);
-    const resp = await fetch(`${API_BASE}/api/sos?${params}`, { headers: authHeaders() });
+    const resp = await fetchWithTimeout(`${API_BASE}/api/sos?${params}`, { headers: authHeaders() });
     return resp.json();
 }
 
 export async function updateSOSStatus(id: string, status: 'ACTIVE' | 'RESPONDING' | 'RESOLVED') {
-    const resp = await fetch(`${API_BASE}/api/sos/${id}`, {
+    const resp = await fetchWithTimeout(`${API_BASE}/api/sos/${id}`, {
         method: 'PATCH', headers: authHeaders(),
         body: JSON.stringify({ status }),
     });
@@ -274,7 +282,7 @@ export async function updateSOSStatus(id: string, status: 'ACTIVE' | 'RESPONDING
 
 // ─── Relief Camps ──────────────────────────────────
 export async function createCamp(data: { name: string; lat: number; lon: number; capacity?: number; facilities?: string; contactPhone?: string; address?: string }) {
-    const resp = await fetch(`${API_BASE}/api/camps`, {
+    const resp = await fetchWithTimeout(`${API_BASE}/api/camps`, {
         method: 'POST', headers: authHeaders(),
         body: JSON.stringify(data),
     });
@@ -285,12 +293,12 @@ export async function fetchCamps(lat?: number, lon?: number) {
     const params = new URLSearchParams();
     if(lat !== undefined) params.set('lat', String(lat));
     if(lon !== undefined) params.set('lon', String(lon));
-    const resp = await fetch(`${API_BASE}/api/camps?${params}`);
+    const resp = await fetchWithTimeout(`${API_BASE}/api/camps?${params}`);
     return resp.json();
 }
 
 export async function updateCamp(id: string, data: Record<string, any>) {
-    const resp = await fetch(`${API_BASE}/api/camps/${id}`, {
+    const resp = await fetchWithTimeout(`${API_BASE}/api/camps/${id}`, {
         method: 'PATCH', headers: authHeaders(),
         body: JSON.stringify(data),
     });
@@ -299,7 +307,7 @@ export async function updateCamp(id: string, data: Record<string, any>) {
 
 // ─── Reports with Photo Upload ─────────────────────
 export async function createReport(data: { reportType: string; description: string; lat: number; lon: number; photoBase64?: string; severity?: string }) {
-    const resp = await fetch(`${API_BASE}/api/reports`, {
+    const resp = await fetchWithTimeout(`${API_BASE}/api/reports`, {
         method: 'POST', headers: authHeaders(),
         body: JSON.stringify(data),
     });
@@ -311,12 +319,12 @@ export async function fetchReports(opts?: { status?: string; type?: string; page
     if(opts?.status) params.set('status', opts.status);
     if(opts?.type) params.set('type', opts.type);
     if(opts?.page) params.set('page', String(opts.page));
-    const resp = await fetch(`${API_BASE}/api/reports?${params}`);
+    const resp = await fetchWithTimeout(`${API_BASE}/api/reports?${params}`);
     return resp.json();
 }
 
 export async function updateReport(id: string, data: { status?: string; assignedVolunteerId?: string }) {
-    const resp = await fetch(`${API_BASE}/api/reports/${id}`, {
+    const resp = await fetchWithTimeout(`${API_BASE}/api/reports/${id}`, {
         method: 'PATCH', headers: authHeaders(),
         body: JSON.stringify(data),
     });
@@ -325,12 +333,12 @@ export async function updateReport(id: string, data: { status?: string; assigned
 
 // ─── Family ────────────────────────────────────────
 export async function fetchFamily(familyId: string) {
-    const resp = await fetch(`${API_BASE}/api/family/${familyId}`, { headers: authHeaders() });
+    const resp = await fetchWithTimeout(`${API_BASE}/api/family/${familyId}`, { headers: authHeaders() });
     return resp.json();
 }
 
 export async function addFamilyMember(data: { name: string; phone: string; relation?: string; specialNeeds?: string }) {
-    const resp = await fetch(`${API_BASE}/api/family/members`, {
+    const resp = await fetchWithTimeout(`${API_BASE}/api/family/members`, {
         method: 'POST', headers: authHeaders(),
         body: JSON.stringify(data),
     });
@@ -338,7 +346,7 @@ export async function addFamilyMember(data: { name: string; phone: string; relat
 }
 
 export async function sendFamilySOS(message?: string, lat?: number, lon?: number) {
-    const resp = await fetch(`${API_BASE}/api/family-sos`, {
+    const resp = await fetchWithTimeout(`${API_BASE}/api/family-sos`, {
         method: 'POST', headers: authHeaders(),
         body: JSON.stringify({ message: message || 'Family SOS Alert', lat, lon }),
     });
@@ -362,7 +370,7 @@ export async function fetchSafeRoute(fromLat: number, fromLon: number, toCampId?
     const params = new URLSearchParams({ fromLat: String(fromLat), fromLon: String(fromLon) });
     if(toCampId) params.set('toCampId', toCampId);
     try {
-        const resp = await fetch(`${API_BASE}/api/routes?${params}`);
+        const resp = await fetchWithTimeout(`${API_BASE}/api/routes?${params}`);
         const json = await resp.json();
         return json.route || null;
     } catch { return null; }
